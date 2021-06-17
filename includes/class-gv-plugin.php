@@ -33,6 +33,16 @@ class GV_Plugin {
       die( 'Grassroots Volunteering Plugin requires the Pods plugin to be activated' );
     } else {
       gv_debug( 'Pods plugin is active' );
+      // Get all available pods
+      // Using this Pods documentation:
+      //   https://pods.io/docs/code/
+      //   https://github.com/pods-framework/pods
+      $pods_api = pods_api();
+      $all_pods = $pods_api->load_pods();
+      gv_debug( 'Found the following pods:' );
+      gv_debug( array_map( function( $pod ) {
+        return $pod[ 'name' ];
+      }, $all_pods ) );
     }
   }
 
