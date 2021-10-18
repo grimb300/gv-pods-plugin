@@ -11,6 +11,7 @@ class GV_Plugin {
    * **********/
 
   public $gv_settings;
+  public $gv_edit_screen;
 
   /* *******
    * Methods
@@ -28,6 +29,12 @@ class GV_Plugin {
     // Instantiate the settings class
     require_once GV_PLUGIN_PATH . 'includes/class-gv-settings.php';
     $this->gv_settings = new GV_Settings();
+    
+    // Instantiate the edit screen customization class
+    // TODO: Should this only be instantiated on admin screens?
+    require_once GV_PLUGIN_PATH . 'includes/class-gv-edit-screen.php';
+    $this->gv_edit_screen = new GV_Edit_Screen();
+
   }
 
   public function gv_jquery_in_head() {
