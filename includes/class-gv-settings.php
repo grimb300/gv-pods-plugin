@@ -10,9 +10,8 @@ class GV_Settings {
    * Properties
    * **********/
 
-  private $legacy_to_wp_ids = array(
-    'business_location' => array(),
-  );
+  // Arrays indexed by the data structure and legacy ID, final value is WP ID
+  private $legacy_id_cache = array();
 
   /* *******
    * Methods
@@ -249,12 +248,42 @@ class GV_Settings {
           "url"
         );
 
+        // Expected volunteer opportunity keys
+        $expected_volunteer_opportunity_keys = array(
+          "contact_info",
+          "cost_label",
+          "cost_suggestion",
+          "description",
+          "duration_notes",
+          "durations",
+          "facebook_url",
+          "fees_notes",
+          "id",
+          "image",
+          "image_id",
+          "locations",
+          "max_duration",
+          "min_duration",
+          "name",
+          "organization_url",
+          "other_ways_to_help",
+          "paired_businesses",
+          "short_location",
+          "slug",
+          "twitter_username",
+          "types",
+          "volunteer_url"
+        );
+
         // Check to see which json file this is
         // gv_debug( 'The first record in the array is:' );
         // gv_debug( $records[0] );
         if ( empty( array_diff( $expected_business_keys, array_keys( $records[0] ) ) ) ) {
           // gv_debug( 'This is an array of businesses' );
           $this->import_businesses( $records );
+        } elseif ( empty( array_diff( $expected_volunteer_opportunity_keys, array_keys( $records[0] ) ) ) ) {
+          // gv_debug( 'This is an array of volunteer opportunities' );
+          $this->import_volunteer_opportunities( $records );
         } else {
           // gv_debug( 'Unknown array type' );
         }
@@ -303,46 +332,144 @@ class GV_Settings {
         return sprintf( '%s: %s', $pair[ 'id' ], $pair[ 'name' ] );
       }, $business[ 'paired_volunteer_opportunities' ] );
 
-      $post_id = wp_insert_post( array(
-        'post_content' => $business[ 'description' ][ 'full' ][ 'html' ],
-        'post_title' => $business[ 'name' ],
-        'post_status' => 'publish',
-        'post_type' => 'business',
-        'post_name' => $business[ 'slug' ],
-        'meta_input' => array(
-          'business_name' => $business[ 'name' ],
-          // 'location' => serialize( array(
-          //   'text' => "",
-          //   'geo' => array(
-          //     'lat' => $business[ 'latitude' ],
-          //     'lng' => $business[ 'longitude' ],
-          //   ),
-          // ) ),
-          'location' => array(
-            'text' => "",
-            'geo' => array(
-              'lat' => $business[ 'latitude' ],
-              'lng' => $business[ 'longitude' ],
+      // Check to see if this legacy ID has already been converted
+      $post_id = $this->get_post_id_from_legacy_id( 'business', $business[ 'id' ] );
+      if ( 0 === $post_id ) {
+        // Business doesn't exist, insert
+        $post_id = wp_insert_post( array(
+          'post_content' => $business[ 'description' ][ 'full' ][ 'html' ],
+          'post_title' => $business[ 'name' ],
+          'post_status' => 'publish',
+          'post_type' => 'business',
+          'post_name' => $business[ 'slug' ],
+          'meta_input' => array(
+            'business_name' => $business[ 'name' ],
+            'location' => array(
+              'text' => "",
+              'geo' => array(
+                'lat' => $business[ 'latitude' ],
+                'lng' => $business[ 'longitude' ],
+              ),
             ),
+            'short_location' => $business[ 'short_location' ],
+            'address' => $business[ 'address' ],
+            'description' => $business[ 'description' ][ 'full' ][ 'html' ],
+            'hours' => $business[ 'hours' ][ 'html' ],
+            'phone_numbers' => serialize( $business[ 'phone_numbers' ] ),
+            'url' => $business[ 'url' ],
+            'legacy_id' => $business[ 'id' ],
+            'legacy_business_types' => implode( ', ', $stringified_business_types ),
+            'legacy_locations' => implode( ' > ', $stringified_locations ),
+            'legacy_paired_volunteer_opportunity_id' => implode( ', ', $stringified_paired_opportunities ),
+            'legacy_slug' => $business[ 'slug' ],
           ),
-          'short_location' => $business[ 'short_location' ],
-          'address' => $business[ 'address' ],
-          'description' => $business[ 'description' ][ 'full' ][ 'html' ],
-          'hours' => $business[ 'hours' ][ 'html' ],
-          'phone_numbers' => serialize( $business[ 'phone_numbers' ] ),
-          'url' => $business[ 'url' ],
-          'legacy_id' => $business[ 'id' ],
-          'legacy_business_types' => implode( ', ', $stringified_business_types ),
-          'legacy_locations' => implode( ' > ', $stringified_locations ),
-          'legacy_paired_volunteer_opportunity_id' => implode( ', ', $stringified_paired_opportunities ),
-          'legacy_slug' => $business[ 'slug' ],
-        ),
-        'tax_input' => array(
-          'business_type' => $business_type_ids,
-          'business_location' => $business_location_ids,
-        ),
-      ) );
+          'tax_input' => array(
+            'business_type' => $business_type_ids,
+            'business_location' => $business_location_ids,
+          ),
+        ) );
+      }
+
+      // Update the legacy ID cache
+      $this->add_id_to_legacy_id_cache( 'business', $business[ 'id' ], $post_id );
     }
+    gv_debug( 'End of businesses, legacy ID cache:' );
+    gv_debug( $this->legacy_id_cache );
+  }
+
+  private function import_volunteer_opportunities( $volunteer_opportunities = array() ) {
+    // gv_debug( sprintf( 'Importing %d volunteer opportunity', count( $volunteer_opportunities ) ) );
+
+    foreach( $volunteer_opportunities as $vol_opp ) {
+      // Convert legacy business types into an array of business_type IDs
+      $volunteer_type_ids = array_map( array( $this, 'convert_legacy_volunteer_types' ), $vol_opp[ 'types' ] );
+      // gv_debug( 'Converted volunteer_type IDs' );
+      // gv_debug( $volunteer_type_ids );
+
+      // Stringify the legacy_volunteer_types field
+      $stringified_volunteer_types = array_map( function ( $type ) {
+        return sprintf( '%s: %s', $type[ 'id' ], $type[ 'name' ] );
+      }, $vol_opp[ 'types' ] );
+
+      // Sort the locations based on ancestry_depth
+      // Have to make a copy of the array since usort sorts in place
+      $sorted_locations = $vol_opp[ 'locations' ];
+      usort( $sorted_locations, function( $a, $b ) {
+        $a_depth = $a[ 'ancestry_depth' ];
+        $b_depth = $b[ 'ancestry_depth' ];
+        if ( $a_depth === $b_depth ) return 0;
+        return $a_depth < $b_depth ? -1 : 1;
+      } );
+
+      // Convert legacy locations into an array of volunteer_location IDs
+      $volunteer_location_ids = array_map( array( $this, 'convert_legacy_volunteer_locations' ), $sorted_locations );
+
+      // Stringify the legacy_locations field
+      $stringified_locations = array_map( function ( $location ) {
+        return sprintf( '%s: %s', $location[ 'id' ], $location[ 'name' ] );
+      }, $sorted_locations );
+
+      // Stringify the legacy_durations field
+      $stringified_durations = array_map( function( $duration ) {
+        return sprintf( '%s: %s', $duration[ 'id' ], $duration[ 'name' ] );
+      }, $vol_opp[ 'durations' ] );
+
+      // Stringify the legacy_cost_label field
+      $stringified_cost_label = sprintf( '%s: %s', $vol_opp[ 'cost_label' ][ 'cost_suggestion' ], $vol_opp[ 'cost_label' ][ 'label' ] );
+
+      // Stringify the legacy_paired_businesses field
+      $stringified_paired_businesses = array_map( function ( $pair ) {
+        return sprintf( '%s: %s', $pair[ 'id' ], $pair[ 'name' ] );
+      }, $vol_opp[ 'paired_businesses' ] );
+
+      // Check to see if this legacy ID has already been converted
+      $post_id = $this->get_post_id_from_legacy_id( 'vol_opportunity', $vol_opp[ 'id' ] );
+      gv_debug( sprintf( 'Legacy vol opp ID %s returned post ID %s', $vol_opp[ 'id' ], $post_id ) );
+      if ( 0 === $post_id ) {
+        // Business doesn't exist, insert
+        $post_id = wp_insert_post( array(
+          'post_content' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
+          'post_title' => $vol_opp[ 'name' ],
+          'post_status' => 'publish',
+          'post_type' => 'vol_opportunity',
+          'post_name' => $vol_opp[ 'slug' ],
+          'meta_input' => array(
+            'volunteer_name' => $vol_opp[ 'name' ],
+            'short_location' => $vol_opp[ 'short_location' ],
+            'organization_url' => $vol_opp[ 'organization_url' ],
+            'volunteer_url' => $vol_opp[ 'volunteer_url' ],
+            'facebook_url' => $vol_opp[ 'facebook_url' ],
+            'twitter_username' => $vol_opp[ 'twitter_username' ],
+            'min_duration' => $vol_opp[ 'min_duration' ],
+            'max_duration' => $vol_opp[ 'max_duration' ],
+            'duration_notes' => $vol_opp[ 'duration_notes' ][ 'html' ],
+            'description' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
+            'cost_suggestion' => $vol_opp[ 'cost_suggestion' ],
+            'fees_notes' => $vol_opp[ 'fees_notes' ][ 'html' ],
+            'other_ways_to_help' => $vol_opp[ 'other_ways_to_help' ][ 'html' ],
+            'contact_info' => $vol_opp[ 'contact_info' ],
+            'legacy_id' => $vol_opp[ 'id' ],
+            'legacy_volunteer_types' => implode( ', ', $stringified_volunteer_types ),
+            'legacy_locations' => implode( ' > ', $stringified_locations ),
+            'legacy_durations' => implode( ', ', $stringified_durations ),
+            'legacy_cost_label' => $stringified_cost_label,
+            'legacy_paired_business_id' => implode( ', ', $stringified_paired_businesses ),
+            'legacy_image' => $vol_opp[ 'image' ][ 'image' ],
+            'legacy_image_id' => $vol_opp[ 'image_id' ],
+            'legacy_slug' => $vol_opp[ 'slug' ],
+          ),
+          'tax_input' => array(
+            'volunteer_type' => $volunteer_type_ids,
+            'volunteer_location' => $volunteer_location_ids,
+          ),
+        ), true );
+      }
+
+      // Update the legacy ID cache
+      $this->add_id_to_legacy_id_cache( 'vol_opportunity', $vol_opp[ 'id' ], $post_id );
+    }
+    gv_debug( 'End of volunteer opportunities, legacy ID cache:' );
+    gv_debug( $this->legacy_id_cache );
   }
 
   private function convert_legacy_business_types( $legacy_term ) {
@@ -353,100 +480,161 @@ class GV_Settings {
     return $this->convert_legacy_terms( 'business_location', $legacy_term );
   }
 
+  private function convert_legacy_volunteer_types( $legacy_term ) {
+    return $this->convert_legacy_terms( 'volunteer_type', $legacy_term );
+  }
+
+  private function convert_legacy_volunteer_locations( $legacy_term ) {
+    return $this->convert_legacy_terms( 'volunteer_location', $legacy_term );
+  }
+
   private function convert_legacy_terms( $taxonomy, $legacy_term ) {
-    $debug_msg = sprintf( '%s id %s ', $taxonomy, $legacy_term[ 'id' ] );
+    // Get the interesting data out of the legacy_term array
+    $legacy_id = $legacy_term[ 'id' ];
+    $name = $legacy_term[ 'name' ];
+    $ancestry = empty( $legacy_term[ 'ancestry' ] ) ? '' : $legacy_term[ 'ancestry' ];
+    $parent_id = 0;
+    if ( ! empty( $legacy_term[ 'ancestry' ] ) ) {
+      $ancestry = explode( '/', $legacy_term[ 'ancestry' ] );
+      $parent_id = $this->get_term_id_from_legacy_id( $taxonomy, end( $ancestry ) );
+      // FIXME: Making a possibly wrong assumption that the parent has already been converted
+      if ( $parent_id <= 0 ) {
+        gv_debug( sprintf( 'Expected %s term %s to have a valid parent', $taxonomy, $name ) );
+      }
+    }
 
     // Check to see if this term has already been converted
-    $term_id = $this->get_term_id_from_legacy_id( $taxonomy, $legacy_term[ 'id' ] );
+    $term_id = $this->get_term_id_from_legacy_id( $taxonomy, $legacy_id );
     
-    // If the term ID is greater than 0, return the converted ID
-    if ( $term_id > 0 ) {
-      $debug_msg .= sprintf( 'has already been created, new id %s', $term_id );
-      if ( 'business_location' === $taxonomy ) {
-        gv_debug( $debug_msg );
-      }
-      return $term_id;
+    // If the returned term ID is 0, add the missing term to the database
+    if ( 0 === $term_id  ) {
+      // The args array contains the parent ID, if it exists
+      $args = $parent_id > 0 ? array( 'parent' => $parent_id ) : array();
+      $term_id = $this->add_legacy_term_to_database( $name, $taxonomy, $args, $legacy_id );
     }
     
-    // If the term ID is 0, create a new term
-    if ( 0 === $term_id ) {
-      $debug_msg .= 'will be created ';
-      // If this is a hierarchial taxonomy, get the parent
-      // NOTE: This assumes the parent has already been created due to the array of terms
-      //       being fed to this mapping function are in parent->child order
-      $parent_term_id = 0;
-      if ( ! empty( $legacy_term[ 'ancestry' ] ) ) {
-        $debug_msg .= sprintf( 'with ancestry %s ', $legacy_term[ 'ancestry' ] );
-        $ancestry = explode( '/', $legacy_term[ 'ancestry' ] );
-        //  gv_debug( 'Ancestry is: ' . $legacy_term[ 'ancestry' ] );
-        //  gv_debug( $ancestry );
-        $parent_term_id = $this->get_term_id_from_legacy_id( $taxonomy, end( $ancestry ) );
-        $debug_msg .= sprintf( 'parent id is %s ', $parent_term_id );
+    // Update the legacy ID cache
+    $this->add_id_to_legacy_id_cache( $taxonomy, $legacy_id, $term_id );
+
+    // Return the term ID
+    return $term_id;
+  }
+
+  private function get_id_from_legacy_id_cache( $data_structure, $legacy_id ) {
+    // Check this data structure is in the cache
+    if ( array_key_exists( $data_structure, $this->legacy_id_cache ) ) {
+      // Check this legacy ID is in the cache
+      if ( array_key_exists( $legacy_id, $this->legacy_id_cache[ $data_structure ] ) ) {
+        // Return the WP ID
+        return $this->legacy_id_cache[ $data_structure ][ $legacy_id ];
       }
-      
-      $inserted_term = wp_insert_term(
-        $legacy_term[ 'name' ],
-        $taxonomy,
-        array( 'parent' => $parent_term_id > 0 ? $parent_term_id : 0, )
-      );
-      if ( is_wp_error( $inserted_term ) ) {
-        gv_debug( sprintf( 'While inserting %s "%s", error returned:', $taxonomy, $legacy_term[ 'name' ] ) );
-        gv_debug( $inserted_term->get_error_messages() );
-        return 0;
-      }
-      update_term_meta( $inserted_term[ 'term_id' ], 'legacy_id', $legacy_term[ 'id' ] );
-      $debug_msg .= sprintf( 'newly created term id %s', $inserted_term[ 'term_id' ] );
-      if ( 'business_location' === $taxonomy ) {
-        gv_debug( $debug_msg );
-      }
-      $this->legacy_to_wp_ids[ $taxonomy ][ $legacy_term[ 'id' ] ] = $inserted_term[ 'term_id' ];
-      return $inserted_term[ 'term_id' ];
     }
-    
-    // Else, something went wrong
-    gv_debug( sprintf( 'Something went wrong "%s" matches multiple %ss', $legacy_term[ 'name' ], $taxonomy ) );
+
+    // The cache doesn't have the WP ID, return 0
     return 0;
   }
 
-  private function get_term_id_from_legacy_id( $taxonomy, $legacy_id ) {
-    $found_term = 0;
-    if ( array_key_exists( $legacy_id, $this->legacy_to_wp_ids[ $taxonomy ] ) ) {
-      $found_term = $this->legacy_to_wp_ids[ $taxonomy ][ $legacy_id ];
+  private function add_id_to_legacy_id_cache( $data_structure, $legacy_id, $wp_id ) {
+    $this->legacy_id_cache[ $data_structure ][ $legacy_id ] = $wp_id;
+  }
+
+  private function get_id_from_term_database( $taxonomy, $legacy_id ) {
+    gv_debug( sprintf( 'Searching for a %s with legacy ID %s', $taxonomy, $legacy_id ) );
+    // Search the database for this legacy ID
+    $found_term = get_terms( array(
+      'hide_empty' => false,
+      'taxonomy' => $taxonomy,
+      'fields' => 'ids',
+      'meta_key' => 'legacy_id',
+      'meta_value' => $legacy_id,
+    ) );
+    gv_debug( sprintf( 'Found %s matching terms', count( $found_term ) ) );
+
+    // Log error and return -1
+    if ( is_wp_error( $found_term ) ) {
+      gv_debug( 'Error searching for legacy ID:' );
+      gv_debug( $found_term->get_error_messages() );
+      return -1;
     }
 
-    // $found_term = get_terms( array(
-    //   'taxonomy' => $taxonomy,
-    //   'fields' => 'ids',
-    //   'meta_key' => 'legacy_id',
-    //   'meta_value' => $legacy_id,
-    // ) );
-    if ( 'business_location' === $taxonomy ) {
-      gv_debug( sprintf( 'Searching for legacy id %s in %s', $legacy_id, $taxonomy ) );
-      gv_debug( $found_term );
-    }
-    return $found_term;
-    
-    // if ( is_wp_error( $found_term ) ) {
-    //   gv_debug( 'Error searching for legacy ID:' );
-    //   gv_debug( $found_term->get_error_messages() );
-    //   return -1;
-    // }
-    
-    // gv_debug( sprintf( 'Found %s matching term(s):', count( $found_term ) ) );
-    // gv_debug( $found_term );
-    
     // If one term ID found, return that ID
-    // if ( 1 === count( $found_term ) ) {
-    //   return $found_term[ 0 ];
-    // }
+    if ( 1 === count( $found_term ) ) {
+      return $found_term[ 0 ];
+    }
     
     // If no term IDs found, return 0
-    // if ( 0 === count( $found_term ) ) {
-    //   return 0;
-    // }
+    if ( 0 === count( $found_term ) ) {
+      return 0;
+    }
     
     // If multiple term IDs found, something went wrong, return -1
-    // gv_debug( sprintf( 'Something went wrong, legacy ID "%s" matches multiple %ss', $legacy_id, $taxonomy ) );
-    // return -1;
+    gv_debug( sprintf( 'Something went wrong, legacy ID "%s" matches multiple %ss', $legacy_id, $taxonomy ) );
+    return -1;
+  }
+
+  private function get_id_from_post_database( $post_type, $legacy_id ) {
+    // Search the database for this legacy ID
+    $found_post = get_posts( array(
+      'post_type' => $post_type,
+      'fields' => 'ids',
+      'meta_key' => 'legacy_id',
+      'meta_value' => $legacy_id,
+    ) );
+
+    // Log error and return -1
+    if ( is_wp_error( $found_post ) ) {
+      gv_debug( 'Error searching for legacy ID:' );
+      gv_debug( $found_post->get_error_messages() );
+      return -1;
+    }
+
+    // If one post ID found, return that ID
+    if ( 1 === count( $found_post ) ) {
+      return $found_post[ 0 ];
+    }
+    
+    // If no post IDs found, return 0
+    if ( 0 === count( $found_post ) ) {
+      return 0;
+    }
+    
+    // If multiple post IDs found, something went wrong, return -1
+    gv_debug( sprintf( 'Something went wrong, legacy ID "%s" matches multiple %ss', $legacy_id, $taxonomy ) );
+    return -1;
+  }
+
+  private function add_legacy_term_to_database( $name, $taxonomy, $args = array(), $legacy_id ) {
+    $inserted_term = wp_insert_term( $name, $taxonomy, $args );
+    if ( is_wp_error( $inserted_term ) ) {
+      gv_debug( sprintf( 'While inserting %s "%s", error returned:', $taxonomy, $name ) );
+      gv_debug( $inserted_term->get_error_messages() );
+      return 0;
+    }
+    update_term_meta( $inserted_term[ 'term_id' ], 'legacy_id', $legacy_id );
+    return $inserted_term[ 'term_id' ];
+  }
+
+  private function get_term_id_from_legacy_id( $taxonomy, $legacy_id ) {
+    // Check the cache, if returned ID > 0, return that ID
+    $cached_term_id = $this->get_id_from_legacy_id_cache( $taxonomy, $legacy_id );
+    if ( $cached_term_id > 0 ) {
+      return $cached_term_id;
+    }
+
+    // Check the database, return the result
+    $db_term_id = $this->get_id_from_term_database( $taxonomy, $legacy_id );
+    return $db_term_id;
+  }
+
+  private function get_post_id_from_legacy_id( $post_type, $legacy_id ) {
+    // Check the cache, if returned ID > 0, return that ID
+    $cached_term_id = $this->get_id_from_legacy_id_cache( $post_type, $legacy_id );
+    if ( $cached_term_id > 0 ) {
+      return $cached_term_id;
+    }
+
+    // Check the database, return the result
+    $db_term_id = $this->get_id_from_post_database( $post_type, $legacy_id );
+    return $db_term_id;
   }
 }
