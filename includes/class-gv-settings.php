@@ -373,8 +373,8 @@ class GV_Settings {
       // Update the legacy ID cache
       $this->add_id_to_legacy_id_cache( 'business', $business[ 'id' ], $post_id );
     }
-    gv_debug( 'End of businesses, legacy ID cache:' );
-    gv_debug( $this->legacy_id_cache );
+    // gv_debug( 'End of businesses, legacy ID cache:' );
+    // gv_debug( $this->legacy_id_cache );
   }
 
   private function import_volunteer_opportunities( $volunteer_opportunities = array() ) {
@@ -409,13 +409,21 @@ class GV_Settings {
         return sprintf( '%s: %s', $location[ 'id' ], $location[ 'name' ] );
       }, $sorted_locations );
 
+      // Convert legacy durations into an array of volunteer_duration IDs
+      $volunteer_duration_ids = array_map( array( $this, 'convert_legacy_volunteer_durations' ), $vol_opp[ 'durations' ] );
+
       // Stringify the legacy_durations field
       $stringified_durations = array_map( function( $duration ) {
         return sprintf( '%s: %s', $duration[ 'id' ], $duration[ 'name' ] );
       }, $vol_opp[ 'durations' ] );
 
+      // Convert legacy cost labels into a volunteer_cost_label ID
+      $volunteer_cost_label_ids = $this->convert_legacy_volunteer_cost_labels( $vol_opp[ 'cost_label' ] );
+
       // Stringify the legacy_cost_label field
-      $stringified_cost_label = sprintf( '%s: %s', $vol_opp[ 'cost_label' ][ 'cost_suggestion' ], $vol_opp[ 'cost_label' ][ 'label' ] );
+      $cost_suggestion = $vol_opp[ 'cost_label' ][ 'cost_suggestion' ];
+      $label = 0 === $cost_suggestion ? "Free" : $vol_opp[ 'cost_label' ][ 'label' ];
+      $stringified_cost_label = sprintf( '%s: %s', $cost_suggestion, $label );
 
       // Stringify the legacy_paired_businesses field
       $stringified_paired_businesses = array_map( function ( $pair ) {
@@ -424,7 +432,7 @@ class GV_Settings {
 
       // Check to see if this legacy ID has already been converted
       $post_id = $this->get_post_id_from_legacy_id( 'vol_opportunity', $vol_opp[ 'id' ] );
-      gv_debug( sprintf( 'Legacy vol opp ID %s returned post ID %s', $vol_opp[ 'id' ], $post_id ) );
+      // gv_debug( sprintf( 'Legacy vol opp ID %s returned post ID %s', $vol_opp[ 'id' ], $post_id ) );
       if ( 0 === $post_id ) {
         // Business doesn't exist, insert
         $post_id = wp_insert_post( array(
@@ -461,6 +469,8 @@ class GV_Settings {
           'tax_input' => array(
             'volunteer_type' => $volunteer_type_ids,
             'volunteer_location' => $volunteer_location_ids,
+            'volunteer_cost_label' => $volunteer_cost_label_ids,
+            'volunteer_duration' => $volunteer_duration_ids,
           ),
         ), true );
       }
@@ -468,27 +478,67 @@ class GV_Settings {
       // Update the legacy ID cache
       $this->add_id_to_legacy_id_cache( 'vol_opportunity', $vol_opp[ 'id' ], $post_id );
     }
-    gv_debug( 'End of volunteer opportunities, legacy ID cache:' );
-    gv_debug( $this->legacy_id_cache );
+    // gv_debug( 'End of volunteer opportunities, legacy ID cache:' );
+    // gv_debug( $this->legacy_id_cache );
   }
 
   private function convert_legacy_business_types( $legacy_term ) {
-    return $this->convert_legacy_terms( 'business_type', $legacy_term );
+    // Pull the term meta values out of legacy_term
+    $term_meta = array( 'legacy_id' => $legacy_term[ 'id' ] );
+    return $this->convert_legacy_terms( 'business_type', $legacy_term, $term_meta );
   }
 
   private function convert_legacy_business_locations( $legacy_term ) {
-    return $this->convert_legacy_terms( 'business_location', $legacy_term );
+    // Pull the term meta values out of legacy_term
+    $term_meta = array( 'legacy_id' => $legacy_term[ 'id' ] );
+    return $this->convert_legacy_terms( 'business_location', $legacy_term, $term_meta );
   }
 
   private function convert_legacy_volunteer_types( $legacy_term ) {
-    return $this->convert_legacy_terms( 'volunteer_type', $legacy_term );
+    // Pull the term meta values out of legacy_term
+    $term_meta = array( 'legacy_id' => $legacy_term[ 'id' ] );
+    return $this->convert_legacy_terms( 'volunteer_type', $legacy_term, $term_meta );
   }
 
   private function convert_legacy_volunteer_locations( $legacy_term ) {
-    return $this->convert_legacy_terms( 'volunteer_location', $legacy_term );
+    // Pull the term meta values out of legacy_term
+    $term_meta = array( 'legacy_id' => $legacy_term[ 'id' ] );
+    return $this->convert_legacy_terms( 'volunteer_location', $legacy_term, $term_meta );
   }
 
-  private function convert_legacy_terms( $taxonomy, $legacy_term ) {
+  private function convert_legacy_volunteer_cost_labels( $legacy_term ) {
+    // convert_legacy_terms() expects the term name to be in $legacy_term[ 'name' ]
+    $legacy_term[ 'name' ] = $legacy_term[ 'label' ];
+    // If cost_suggestion is 0, the label is blank. Special case this to "Free"
+    if ( 0 === $legacy_term[ 'cost_suggestion' ] ) {
+      $legacy_term[ 'name' ] = "Free";
+    }
+    // Pull the term meta values out of legacy_term
+    $term_meta = array(
+      'cost_suggestion' => $legacy_term[ 'cost_suggestion' ],
+      'legacy_id' => $legacy_term[ 'id' ]
+    );
+    return $this->convert_legacy_terms( 'volunteer_cost_label', $legacy_term, $term_meta );
+  }
+
+  private function convert_legacy_volunteer_durations( $legacy_term ) {
+    // The 'name'field in the JSON has some annoying dashes between each word, strip those out
+    $name = implode( ' ', explode( '-', $legacy_term[ 'name' ] ) );
+    $legacy_term[ 'name' ] = $name;
+    // Pull the term meta values out of legacy_term
+    $term_meta = array(
+      'min' => $legacy_term[ 'min' ],
+      'min_units' => $legacy_term[ 'unit' ],
+      'max' => $legacy_term[ 'max' ],
+      'max_units' => $legacy_term[ 'unit' ],
+      'min_in_days' => $legacy_term[ 'min_in_days' ],
+      'max_in_days' => $legacy_term[ 'max_in_days' ],
+      'legacy_id' => $legacy_term[ 'id' ]
+    );
+    return $this->convert_legacy_terms( 'volunteer_duration', $legacy_term, $term_meta );
+  }
+
+  private function convert_legacy_terms( $taxonomy, $legacy_term, $term_meta = array() ) {
     // Get the interesting data out of the legacy_term array
     $legacy_id = $legacy_term[ 'id' ];
     $name = $legacy_term[ 'name' ];
@@ -499,7 +549,7 @@ class GV_Settings {
       $parent_id = $this->get_term_id_from_legacy_id( $taxonomy, end( $ancestry ) );
       // FIXME: Making a possibly wrong assumption that the parent has already been converted
       if ( $parent_id <= 0 ) {
-        gv_debug( sprintf( 'Expected %s term %s to have a valid parent', $taxonomy, $name ) );
+        // gv_debug( sprintf( 'Expected %s term %s to have a valid parent', $taxonomy, $name ) );
       }
     }
 
@@ -510,7 +560,7 @@ class GV_Settings {
     if ( 0 === $term_id  ) {
       // The args array contains the parent ID, if it exists
       $args = $parent_id > 0 ? array( 'parent' => $parent_id ) : array();
-      $term_id = $this->add_legacy_term_to_database( $name, $taxonomy, $args, $legacy_id );
+      $term_id = $this->add_legacy_term_to_database( $name, $taxonomy, $args, $term_meta );
     }
     
     // Update the legacy ID cache
@@ -539,7 +589,7 @@ class GV_Settings {
   }
 
   private function get_id_from_term_database( $taxonomy, $legacy_id ) {
-    gv_debug( sprintf( 'Searching for a %s with legacy ID %s', $taxonomy, $legacy_id ) );
+    // gv_debug( sprintf( 'Searching for a %s with legacy ID %s', $taxonomy, $legacy_id ) );
     // Search the database for this legacy ID
     $found_term = get_terms( array(
       'hide_empty' => false,
@@ -548,7 +598,7 @@ class GV_Settings {
       'meta_key' => 'legacy_id',
       'meta_value' => $legacy_id,
     ) );
-    gv_debug( sprintf( 'Found %s matching terms', count( $found_term ) ) );
+    // gv_debug( sprintf( 'Found %s matching terms', count( $found_term ) ) );
 
     // Log error and return -1
     if ( is_wp_error( $found_term ) ) {
@@ -603,14 +653,16 @@ class GV_Settings {
     return -1;
   }
 
-  private function add_legacy_term_to_database( $name, $taxonomy, $args = array(), $legacy_id ) {
+  private function add_legacy_term_to_database( $name, $taxonomy, $args = array(), $meta = array() ) {
     $inserted_term = wp_insert_term( $name, $taxonomy, $args );
     if ( is_wp_error( $inserted_term ) ) {
       gv_debug( sprintf( 'While inserting %s "%s", error returned:', $taxonomy, $name ) );
       gv_debug( $inserted_term->get_error_messages() );
       return 0;
     }
-    update_term_meta( $inserted_term[ 'term_id' ], 'legacy_id', $legacy_id );
+    foreach( $meta as $meta_key => $meta_value ) {
+      update_term_meta( $inserted_term[ 'term_id' ], $meta_key, $meta_value );
+    }
     return $inserted_term[ 'term_id' ];
   }
 
