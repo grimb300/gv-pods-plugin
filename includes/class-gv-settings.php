@@ -28,7 +28,13 @@ class GV_Settings {
     // Import/Export settings
     // add_action( 'admin_init', array( $this, 'gv_process_settings_export' ) );
     // add_action( 'admin_init', array( $this, 'gv_process_settings_import' ) );
-    add_action( 'admin_init', array( $this, 'gv_process_legacy_data_import' ) );
+    // add_action( 'admin_init', array( $this, 'gv_process_legacy_data_import' ) );
+    add_action( 'admin_init', array( $this, 'gv_upload_files' ) );
+    add_action( 'admin_init', array( $this, 'gv_delete_files' ) );
+    add_action( 'admin_init', array( $this, 'gv_import_businesses' ) );
+    add_action( 'admin_init', array( $this, 'gv_import_vol_opps' ) );
+    add_action( 'admin_init', array( $this, 'gv_link_bus_to_vol_opp' ) );
+    add_action( 'admin_init', array( $this, 'gv_import_images' ) );
   }
 
   // Register the plugin settings
@@ -76,120 +82,303 @@ class GV_Settings {
           </tr>
         </table>
         <?php submit_button(); ?>
+      </form> <!-- End Options Form -->
+
+      <h2><?php _e( 'Import Legacy Data' ); ?></h2>
+      <?php $uploaded_files = get_option( 'gv_import_uploaded_files', array() ); ?>
+      <form method="post" enctype="multipart/form-data">
+        <table class="form-table">
+          <tr valign="top">
+            <th scope="row">
+              <label><?php _e( 'Businesses Data'); ?></label>
+            </th>
+            <td>
+              <?php echo empty( $uploaded_files[ 'businesses' ] ) ? 'Empty' : $uploaded_files[ 'businesses' ]; ?> 
+            </td>
+            <td>
+              <input type="file" name="file_import_0"/>
+            </td>
+          </tr>
+          <tr valign="top">
+            <th scope="row">
+              <label><?php _e( 'Volunteer Opportunities Data'); ?></label>
+            </th>
+            <td>
+              <?php echo empty( $uploaded_files[ 'volunteer_opportunities' ] ) ? 'Empty' : $uploaded_files[ 'volunteer_opportunities' ]; ?> 
+            </td>
+            <td>
+              <input type="file" name="file_import_1"/>
+            </td>
+          </tr>
+          <tr valign="top">
+            <th scope="row">
+              <label><?php _e( 'Images Archive'); ?></label>
+            </th>
+            <td>
+              <?php echo empty( $uploaded_files[ 'images_archive' ] ) ? 'Empty' : $uploaded_files[ 'images_archive' ]; ?> 
+            </td>
+            <td>
+              <input type="file" name="file_import_2"/>
+            </td>
+          </tr>
+          <tr>
+            <th></th>
+            <td></td>
+            <td>
+              <input type="hidden" name="gv_action" value="upload_files" />
+              <?php wp_nonce_field( 'gv_upload_files_nonce', 'gv_upload_files_nonce' ); ?>
+              <?php submit_button( __( 'Upload Files' ) ); ?>
+            </td>
+          </tr>
+        </table>
       </form>
-      <div class="metabox-holder">
-        <!-- <div class="postbox">
-          <h3><span><?php //_e( 'Export Settings' ); ?></span></h3>
-          <div class="inside">
-            <p><?php //_e( 'Export the plugin settings for this site as a .json file. This allows you to easily import the configuration into another site.' ); ?></p>
-            <form method="post">
-						  <p><input type="hidden" name="gv_action" value="export_settings" /></p>
-						  <p>
-							  <?php //wp_nonce_field( 'gv_export_nonce', 'gv_export_nonce' ); ?>
-							  <?php //submit_button( __( 'Export' ), 'secondary', 'submit', false ); ?>
-						  </p>
-            </form>
-          </div>
-        </div> -->
-        <!-- <div class="postbox">
-          <h3><span><?php //_e( 'Import Settings' ); ?></span></h3>
-          <div class="inside">
-            <p><?php //_e( 'Import the plugin settings from a .json file. This file can be obtained by exporting the settings on another site using the form above.' ); ?></p>
-            <form method="post" enctype="multipart/form-data">
-              <p>
-                <input type="file" name="import_file"/>
-              </p>
-              <p>
-                <input type="hidden" name="gv_action" value="import_settings" />
-                <?php //wp_nonce_field( 'gv_import_nonce', 'gv_import_nonce' ); ?>
-                <?php //submit_button( __( 'Import' ), 'secondary', 'submit', false ); ?>
-              </p>
-            </form>
-          </div>
-        </div> -->
-        <div class="postbox">
-          <h3><span><?php _e( 'Import Legacy Data' ); ?></span></h3>
-          <div class="inside">
-            <form method="post" enctype="multipart/form-data">
-              <p>Import legacy businesses and/or volunteer opportunity json data</p>
-              <p>
-                <input type="file" name="file_import_0"/>
-              </p>
-              <p>
-                <input type="file" name="file_import_1"/>
-              </p>
-              <p>
-                <input type="hidden" name="gv_action" value="import_legacy_data" />
-                <?php wp_nonce_field( 'gv_import_nonce', 'gv_import_nonce' ); ?>
-                <?php submit_button( __( 'Import' ), 'secondary', 'submit', false ); ?>
-              </p>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+      <form method="post">
+        <input type="hidden" name="gv_action" value="delete_files" />
+        <?php wp_nonce_field( 'gv_delete_files_nonce', 'gv_delete_files_nonce' ); ?>
+        <?php submit_button( __( 'Delete Files' ), 'delete' ); ?>
+      </form>
+      <form method="post">
+        <input type="hidden" name="gv_action" value="import_businesses" />
+        <?php wp_nonce_field( 'gv_import_businesses_nonce', 'gv_import_businesses_nonce' ); ?>
+        <?php submit_button( __( 'Import Businesses' ), 'secondary' ); ?>
+      </form>
+      <form method="post">
+        <input type="hidden" name="gv_action" value="import_vol_opps" />
+        <?php wp_nonce_field( 'gv_import_vol_opps_nonce', 'gv_import_vol_opps_nonce' ); ?>
+        <?php submit_button( __( 'Import Vol Opps' ), 'secondary' ); ?>
+      </form>
+      <form method="post">
+        <input type="hidden" name="gv_action" value="link_bus_to_vol_opp" />
+        <?php wp_nonce_field( 'gv_link_bus_to_vol_opp_nonce', 'gv_link_bus_to_vol_opp_nonce' ); ?>
+        <?php submit_button( __( 'Link Bus->Vol Opp' ), 'secondary' ); ?>
+      </form>
+      <form method="post">
+        <input type="hidden" name="gv_action" value="import_images" />
+        <?php wp_nonce_field( 'gv_import_images_nonce', 'gv_import_images_nonce' ); ?>
+        <?php submit_button( __( 'Import Images' ), 'secondary' ); ?>
+      </form>
+    </div> <!-- .wrap -->
     <?php
   }
 
-  // // Process a settings export that generates a .json file of the settings
-  // public function gv_process_settings_export() {
-  //   // Return if not an export_settings gv_action
-  //   if ( empty( $_POST[ 'gv_action' ] ) || 'export_settings' !== $_POST[ 'gv_action' ] ) return;
-  //   // Return if bad nonce
-  //   if ( ! wp_verify_nonce( $_POST[ 'gv_export_nonce' ], 'gv_export_nonce' ) ) return;
-  //   // Return if insufficient permissions
-  //   if ( ! current_user_can( 'manage_options' ) ) return;
+  // Check file extension
+  private function has_file_extension( $filename, $extension ) {
+    return $extension === substr( $filename, ( 0 - strlen( $extension ) ) );
+  }
 
-  //   // Get the settings
-  //   $settings = get_option( 'gv_settings' );
+  // Check json file data structure
+  private function is_businesses_json( $filename ) {
+    $expected_business_keys = array(
+      "address", "business_types", "description", "hours", "id", "latitude", "locations",
+      "longitude", "name", "paired_volunteer_opportunities", "phone_numbers",
+      "short_location", "slug", "url"
+    );
+    return $this->json_has_expected_keys( $filename, $expected_business_keys ); 
+  }
+  private function is_volunteer_opportunities_json( $filename ) {
+    $expected_volunteer_opportunity_keys = array(
+      "contact_info", "cost_label", "cost_suggestion", "description", "duration_notes",
+      "durations", "facebook_url", "fees_notes", "id", "image", "image_id", "locations",
+      "max_duration", "min_duration", "name", "organization_url", "other_ways_to_help",
+      "paired_businesses", "short_location", "slug", "twitter_username", "types", "volunteer_url"
+    );
+    return $this->json_has_expected_keys( $filename, $expected_volunteer_opportunity_keys );
+  }
+  private function json_has_expected_keys( $filename, $keys ) {
+    $records = (array) json_decode( file_get_contents( $filename ), true );
+    if ( is_array( $records ) && empty( array_diff( $keys, array_keys( $records[0] ) ) ) ) {
+      return true;
+    }
+    return false;
+  }
 
-  //   // This makes sure the export completes even if the user disconnects
-  //   ignore_user_abort( true );
+  // Return the path to GV uploads directory
+  private function gv_upload_dir() {
+    // Check for existence of the uploads directory and create if necessary
+    $base_upload_dir = wp_upload_dir();
+    // gv_debug( 'wp_upload_dir results:' );
+    // gv_debug( $base_upload_dir );
+    $gv_upload_dir = $base_upload_dir[ 'basedir' ] . '/gv_uploads';
+    // gv_debug( 'gv_upload_dir: ' . $gv_upload_dir );
+    if ( ! ( file_exists( $gv_upload_dir ) && is_dir( $gv_upload_dir ) ) ) {
+      // gv_debug( 'GV uploads directory does not exist. Creating it.' );
+      if ( ! mkdir( $gv_upload_dir, 0755 ) ) {
+        gv_debug( 'Error creating upload directory:' . $gv_upload_dir );
+        return '';
+      }
+      // gv_debug( 'Successfully created upload directory' );
+    }
+    return $gv_upload_dir;
+  }
+  
+  // Process the uploaded files
+  public function gv_upload_files() {
+    // Return if not an upload_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'upload_files' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_upload_files_nonce' ], 'gv_upload_files_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
 
-  //   // Response header
-  //   nocache_headers();
-  //   header( 'Content-Type: application/json; charset=utf-8' );
-  //   header( 'Content-Disposition: attachment; filename=gv-settings-export-' . date( 'm-d-Y' ) . '.json' );
-  //   header( 'Expires: 0' );
+    // Get the GV upload directory
+    $gv_upload_dir = $this->gv_upload_dir();
+    if ( empty( $gv_upload_dir ) ) {
+      gv_debug( 'Problem creating the GV upload directory' );
+      return;
+    }
+   
+    // Iterate across the uploaded files and move to the uploads directory
+    foreach ( $_FILES as $slot => $file ) {
+      // gv_debug( 'Checking uploaded file slot ' . $slot );
+      // Skip if this isn't an uploaded file
+      if ( ! is_uploaded_file( $file[ 'tmp_name' ] ) ) continue;
+      // gv_debug( 'Valid uploaded file: ' . $file[ 'tmp_name' ] );
 
-  //   // Return the file
-  //   echo json_encode( $settings );
-  //   exit;
-  // }
+      // Check that this is an expected file extension
+      $valid_file_extensions = array( '.json', '.json.gz', '.tar', '.tar.gz' );
+      $matching_file_extensions = array_filter( $valid_file_extensions, function ( $ext ) use ( $file ) {
+        return $this->has_file_extension( $file[ 'name' ], $ext );
+      } );
+      if ( empty( $matching_file_extensions ) ) {
+        // gv_debug( 'File does not have a valid file extension: ' . $file[ 'name' ] );
+        continue;
+      }
+      // gv_debug( 'Valid file extension: ' . $file[ 'name' ] );
 
-  // // Process a settings import from a json file
-  // public function gv_process_settings_import() {
-  //   // Return if not an import_settings gv_action
-  //   if ( empty( $_POST[ 'gv_action' ] ) || 'import_settings' !== $_POST[ 'gv_action' ] ) return;
-  //   // Return if bad nonce
-  //   if ( ! wp_verify_nonce( $_POST[ 'gv_import_nonce' ], 'gv_import_nonce' ) ) return;
-  //   // Return if insufficient permissions
-  //   if ( ! current_user_can( 'manage_options' ) ) return;
+      // Check that this is an expected file
+      $valid_file = '';
+      // Assume this is an image archive if file extension is .tar or .tar.gz
+      if ( $this->has_file_extension( $file[ 'name' ], '.tar' ) || $this->has_file_extension( $file[ 'name' ], '.tar.gz' ) ) {
+        $valid_file = 'images_archive';
+        // gv_debug( 'File is an image archive' );
+      }
+      // If this is a json file, check to see if it has one of the expected data structures
+      if ( $this->has_file_extension( $file[ 'name' ], '.json' ) ) {
+        if ( $this->is_businesses_json( $file[ 'tmp_name' ] ) ) {
+          $valid_file = 'businesses';
+        }
+        if ( $this->is_volunteer_opportunities_json( $file[ 'tmp_name' ] ) ) {
+          $valid_file = 'volunteer_opportunities';
+        }
+      }
+      if ( empty( $valid_file ) ) {
+        continue;
+      }
 
-  //   // Check correct file extension
-  //   $extension = end( explode( '.', $_FILES[ 'import_file' ][ 'name' ] ) );
-  //   if ( 'json' !== $extension ) {
-  //     wp_die( __( 'Please upload a valid .json file' ) );
-  //   }
+      // Copy file to uploads directory
+      if ( ! move_uploaded_file( $file[ 'tmp_name' ], sprintf( '%s/%s', $gv_upload_dir, $file[ 'name' ] ) ) ) {
+        gv_debug( 'Error copying file to uploads directory' );
+        continue;
+      }
 
-  //   // Check that a file was uploaded
-  //   $import_file = $_FILES[ 'import_file' ][ 'tmp_name' ];
-  //   if ( empty( $import_file ) ) {
-  //     wp_die( __( 'Please upload a file to import' ) );
-  //   }
+      // Update the uploaded files option
+      $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+      if ( array_key_exists( $valid_file, $uploaded_files ) && ! empty( $uploaded_files[ $valid_file ] ) ) {
+        // If this slot already had a file, delete it
+        $this->gv_delete_single_file( $uploaded_files[ $valid_file ] );
+      }
+      $uploaded_files[ $valid_file ] = $file[ 'name' ];
+      update_option( 'gv_import_uploaded_files', $uploaded_files );
+    }
+  }
 
-  //   // Convert the json object in the uploaded file to an array and update the settings
-  //   $settings = (array) json_decode( file_get_contents( $import_file ) );
-  //   update_option( 'gv_settings', $settings );
+  // Delete a single uploaded file
+  private function gv_delete_single_file( $file ) {
+    // Get the GV upload directory
+    $gv_upload_dir = $this->gv_upload_dir();
+    // Build the full filename
+    $filename = sprintf( '%s/%s', $gv_upload_dir, $file );
+    // Delete the file if it exists
+    if ( file_exists( $filename ) ) {
+      if ( ! unlink( $filename ) ) {
+        gv_debug( 'Problems unlinking file: ' . $filename );
+      }
+    }
+  }
 
-  //   // Redirect back to the settings page
-  //   wp_safe_redirect( admin_url( 'options-general.php?page=gv_settings' ) );
-  //   exit;
-  // }
+  // Delete the uploaded files
+  public function gv_delete_files() {
+    // Return if not an delete_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'delete_files' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_delete_files_nonce' ], 'gv_delete_files_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    
+    // Get the GV upload directory
+    $gv_upload_dir = $this->gv_upload_dir();
 
+    // Delete the uploaded files found in options
+    $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+    foreach ( $uploaded_files as $file ) {
+      if ( empty( $file ) ) continue;
+      $this->gv_delete_single_file( $file );
+    }
+
+    // Clear out the stored filenames in options
+    delete_option( 'gv_import_uploaded_files' );
+}
+  
+  // Import the legacy business records from the uploaded json file
+  public function gv_import_businesses() {
+    // Return if not an delete_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'import_businesses' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_import_businesses_nonce' ], 'gv_import_businesses_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    
+    gv_debug( 'Executing the import_businesses action' );
+  }
+  
+  // Delete the uploaded files
+  public function gv_import_vol_opps() {
+    // Return if not an delete_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'import_vol_opps' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_import_vol_opps_nonce' ], 'gv_import_vol_opps_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    
+    gv_debug( 'Executing the import_vol_opps action' );
+  }
+  
+  // Delete the uploaded files
+  public function gv_link_bus_to_vol_opp() {
+    // Return if not an delete_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'link_bus_to_vol_opp' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_link_bus_to_vol_opp_nonce' ], 'gv_link_bus_to_vol_opp_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    
+    gv_debug( 'Executing the link_bus_to_vol_opp action' );
+  }
+  
+  // Delete the uploaded files
+  public function gv_import_images() {
+    // Return if not an delete_files action
+    if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'import_images' !== $_POST[ 'gv_action' ] ) ) return;
+    // Return if bad nonce
+    if ( ! wp_verify_nonce( $_POST[ 'gv_import_images_nonce' ], 'gv_import_images_nonce' ) ) return;
+    // Return if insufficient permissions
+    if ( ! current_user_can( 'manage_options' ) ) return;
+
+    gv_debug( 'Executing the import_images action' );
+  }
+
+  // TODO: Need to break this whole process into multiple steps.
+  //         - Upload files, can be done in any order. Need to keep track of files so I don't have to upload multiple times.
+  //         - Import businesses, requires businesses json to be uploaded
+  //         - Import volunteer opportunities, requires volunteer json to be uploaded
+  //         - Link businesses and volunteer opportunities, requires business and volunteer json to be uploaded
+  //         - Import images, requires image archive (*.tar.gz) and volunteer json to be uploaded
+  //           TODO: What do I do with images that aren't associated with a volunteer opportunity?
   // Process a legacy data import from json files
+  // TODO: Change name of this function to gv_upload_files
   public function gv_process_legacy_data_import() {
     // Return if not an import_settings gv_action
+    // TODO: Change gv_action name to upload_files
     if ( empty( $_POST[ 'gv_action' ] ) || 'import_legacy_data' !== $_POST[ 'gv_action' ] ) return;
     // Return if bad nonce
     if ( ! wp_verify_nonce( $_POST[ 'gv_import_nonce' ], 'gv_import_nonce' ) ) return;
@@ -197,6 +386,7 @@ class GV_Settings {
     if ( ! current_user_can( 'manage_options' ) ) return;
 
     // Get the uploaded file(s) info
+    // TODO: No need to filter THEN iterate over the filtered files, do this in one loop
     $uploaded_files = array_filter(
       $_FILES,
       function ( $file_info ) {
@@ -205,13 +395,24 @@ class GV_Settings {
 
         // Check that the uploaded file is json
         $exploded_filename = explode( '.', $file_info[ 'name' ] );
-        $file_extension = end( $exploded_filename );
-        if ( 'json' !== $file_extension ) {
-          wp_die(__( 'Please upload .json file(s). Unexpected file type: ' . $file_info[ 'name' ] ) );
+        $file_extension = array_pop( $exploded_filename );
+        // If the file extension is gz, check the next extension
+        if ( 'gz' === $file_extension ) {
+          $file_extension = array_pop( $exploded_filename );
+        }
+        if ( 'json' === $file_extension ) {
+          gv_debug( 'Expected json file extension' );
+          return true;
+        } elseif ( 'tar' === $file_extension ) {
+          gv_debug( 'Expected tar file extension' );
+          return true;
         }
 
-        // Passed all filter conditions, return true
-        return true;
+        // Commenting out, going to just ignore unexpected file types
+        // wp_die(__( 'Please upload .json, .tar, or .tar.gz file(s). Unexpected file type: ' . $file_info[ 'name' ] ) );
+        // Filter out this file, return false
+        gv_debug( 'Please upload .json, .tar, or .tar.gz file(s). Unexpected file type: ' . $file_info[ 'name' ] );
+        return false;
       }
     );
     // gv_debug( sprintf( 'There are %d files uploaded', count( $uploaded_files ) ) );
@@ -224,6 +425,35 @@ class GV_Settings {
 
     // Parse the uploaded json file(s)
     foreach( $uploaded_files as $file_info ) {
+      // If there isn't an uploads directory, create one
+      $gv_upload_dir = GV_PLUGIN_PATH . 'uploads';
+      if ( ! ( file_exists( $gv_upload_dir ) && is_dir( $gv_upload_dir ) ) ) {
+        gv_debug( 'GV uploads directory does not exist. Creating it.' );
+        if ( ! mkdir( $gv_upload_dir, 0755 ) ) {
+          gv_debug( 'Error creating upload directory:' . $gv_upload_dir );
+          continue;
+        }
+        gv_debug( 'Successfully created upload directory' );
+      }
+
+      // Move the file from the tmp area to the uploads directory
+      $gv_upload_location = sprintf( '%s/%s', $gv_upload_dir, $file_info[ 'name' ] );
+      if ( ! rename( $file_info[ 'tmp_name' ], $gv_upload_location ) ) {
+        gv_debug( sprintf( 'Failed to copy tmp file (%s) to the upload directory (%s)', $file_info[ 'tmp_name' ], $gv_upload_location ) );
+        continue;
+      }
+      // Update the permissions
+      if ( ! chmod( $gv_upload_location, 0644 ) ) {
+        gv_debug( sprintf( 'Failed to change permissions on uploaded file (%s)', $gv_upload_location ) );
+        continue;
+      }
+
+      // Check if this is a zipped file and unzip it
+
+      if ( '.json' !== substr( $file_info[ 'name' ], -5 ) ) {
+        gv_debug( 'Not a json file, skipping for now' );
+        continue;
+      }
       $records = (array) json_decode( file_get_contents( $file_info[ 'tmp_name' ] ), true );
       if ( empty( $records ) ) {
         // gv_debug( sprintf( 'Uploaded an empty json file: %s', $file_info[ 'name' ] ) );
