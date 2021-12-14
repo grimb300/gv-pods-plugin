@@ -185,12 +185,16 @@ class GV_Settings {
     return $this->json_has_expected_keys( $filename, $expected_volunteer_opportunity_keys );
   }
   private function json_has_expected_keys( $filename, $keys ) {
-    $records = (array) json_decode( file_get_contents( $filename ), true );
+    $records = $this->gv_import_json( $filename );
     if ( is_array( $records ) && empty( array_diff( $keys, array_keys( $records[0] ) ) ) ) {
       return true;
     }
     return false;
   }
+  private function gv_import_json( $filename ) {
+    return (array) json_decode( file_get_contents( $filename ), true );
+  }
+
 
   // Return the path to GV uploads directory
   private function gv_upload_dir() {
@@ -298,7 +302,7 @@ class GV_Settings {
 
   // Delete the uploaded files
   public function gv_delete_files() {
-    // Return if not an delete_files action
+    // Return if not a delete_files action
     if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'delete_files' !== $_POST[ 'gv_action' ] ) ) return;
     // Return if bad nonce
     if ( ! wp_verify_nonce( $_POST[ 'gv_delete_files_nonce' ], 'gv_delete_files_nonce' ) ) return;
@@ -327,11 +331,25 @@ class GV_Settings {
     if ( ! wp_verify_nonce( $_POST[ 'gv_import_businesses_nonce' ], 'gv_import_businesses_nonce' ) ) return;
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
-    
-    gv_debug( 'Executing the import_businesses action' );
+
+    // Check to see if a business json was uploaded
+    $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+    if ( empty( $uploaded_files[ 'businesses' ] ) ) {
+      gv_debug( 'No businesses json for import businesses action' );
+      return;
+    }
+
+    // Open the file
+    $file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'businesses' ] );
+    gv_debug( 'Executing the import_businesses action on ' . $file_path );
+    $records = $this->gv_import_json( $file_path );
+
+    // Import the businesses records
+    gv_debug( 'Found ' . count( $records ) . ' businesses to import' );
+    $this->import_businesses( $records );
   }
   
-  // Delete the uploaded files
+  // Import the legacy volunteer opportunities records from the uploaded json file
   public function gv_import_vol_opps() {
     // Return if not an delete_files action
     if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'import_vol_opps' !== $_POST[ 'gv_action' ] ) ) return;
@@ -340,10 +358,24 @@ class GV_Settings {
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
     
-    gv_debug( 'Executing the import_vol_opps action' );
+    // Check to see if a volunteer opportunities json was uploaded
+    $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+    if ( empty( $uploaded_files[ 'volunteer_opportunities' ] ) ) {
+      gv_debug( 'No volunteer opportunities json for import_vol_opps action' );
+      return;
+    }
+
+    // Open the file
+    $file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    gv_debug( 'Executing the import_vol_opps action on ' . $file_path );
+    $records = $this->gv_import_json( $file_path );
+
+    // Import the businesses records
+    gv_debug( 'Found ' . count( $records ) . ' volunteer opportunities to import' );
+    $this->import_volunteer_opportunities( $records );
   }
   
-  // Delete the uploaded files
+  // Link paired legacy businesses and volunteer opportunities
   public function gv_link_bus_to_vol_opp() {
     // Return if not an delete_files action
     if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'link_bus_to_vol_opp' !== $_POST[ 'gv_action' ] ) ) return;
@@ -352,10 +384,67 @@ class GV_Settings {
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
     
-    gv_debug( 'Executing the link_bus_to_vol_opp action' );
+    // Check to see if a businesses or volunteer opportunities json was uploaded
+    $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+    if ( empty( $uploaded_files[ 'businesses' ] ) && empty( $uploaded_files[ 'volunteer_opportunities' ] ) ) {
+      // FIXME: Could technically try to link using only the data in already uploaded posts.
+      gv_debug( 'No businesses or volunteer opportunities json for link_bus_to_vol_opp action' );
+      return;
+    }
+
+    // Open the files
+    $bus_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'businesses' ] );
+    $vol_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    gv_debug( sprintf( 'Executing the link_bus_to_vol_opp action on %s and %s', $bus_file_path, $vol_file_path ) );
+    $bus_records = $this->gv_import_json( $bus_file_path );
+    $vol_records = $this->gv_import_json( $vol_file_path );
+
+    // Link the paired businesses to volunteer opportunities
+    $paired_bus_records = array_filter( $bus_records, function ( $record ) {
+      if ( count( $record[ 'paired_volunteer_opportunities' ] ) > 1 ) {
+        gv_debug( sprintf( 'Business ID %s has %s paired volunteer_opportunities', $record[ 'id' ], count( $record[ 'paired_volunteer_opportunities' ] ) ) );
+      }
+      return ! empty( $record[ 'paired_volunteer_opportunities' ] );
+    } );
+    $paired_vol_records = array_filter( $vol_records, function ( $record ) {
+      if ( count( $record[ 'paired_businesses' ] ) > 1 ) {
+        gv_debug( sprintf( 'Vol Opp ID %s has %s paired businesses', $record[ 'id' ], count( $record[ 'paired_businesses' ] ) ) );
+      }
+      return ! empty( $record[ 'paired_businesses' ] );
+    } );
+    gv_debug( sprintf( 'Found %s businesses and %s volunteer opportunities that are paired', count( $paired_bus_records ), count( $paired_vol_records ) ) );
+
+    // Pick one to serve as the master (businesses just because)
+    foreach ( $paired_bus_records as $bus_record ) {
+      // Get the legacy IDs of the paired business and volunteer opportunity
+      $bus_legacy_id = $bus_record[ 'id' ];
+      $vol_legacy_ids = array_map( function ( $vol ) { return $vol[ 'id' ]; }, $bus_record[ 'paired_volunteer_opportunities' ] );
+      gv_debug( sprintf( 'Business %s is paired with volunteer opportunity %s', $bus_legacy_id, implode( ' and ', $vol_legacy_ids ) ) );
+      // $bus_post = get_posts(
+      //   array(
+      //     'post_type' => 'business',
+      //     'fields' => 'ids',
+      //     'meta_key' => 'legacy_id',
+      //     'meta_value' => $bus_record[ 'id' ]
+      //   )
+      // );
+      // if ( empty( $bus_post ) ) {
+      //   gv_debug( 'No post found for legacy ID ' . $bus_record[ 'id' ] );
+      // } elseif ( count( $bus_post ) > 1 ) {
+      //   gv_debug( 'Found multiple posts for legacy ID ' . $bus_record[ 'id' ] );
+      // } else {
+      //   gv_debug( 'Found post ID ' . $bus_post[ 0 ] . ' with legacy id ' . $bus_record[ 'id' ] );
+      //   $bus_pod = pods( 'business', $bus_post[ 0 ] );
+      //   if ( $bus_pod->exists() ) {
+      //     gv_debug( 'Found the business pod' );
+      //   } else {
+      //     gv_debug( 'Could not find the business pod with legacy id ' . $bus_record[ 'id' ] );
+      //   }
+      // }
+    }
   }
   
-  // Delete the uploaded files
+  // Import the legacy images and link to the associated volunteer opportunities
   public function gv_import_images() {
     // Return if not an delete_files action
     if ( ! array_key_exists( 'gv_action', $_POST ) || ( 'import_images' !== $_POST[ 'gv_action' ] ) ) return;
