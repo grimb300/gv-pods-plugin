@@ -384,7 +384,7 @@ class GV_Settings {
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
     
-    // Check to see if a businesses or volunteer opportunities json was uploaded
+    // Check to see if businesses and volunteer opportunities json was uploaded
     $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
     if ( empty( $uploaded_files[ 'businesses' ] ) && empty( $uploaded_files[ 'volunteer_opportunities' ] ) ) {
       // FIXME: Could technically try to link using only the data in already uploaded posts.
@@ -419,29 +419,62 @@ class GV_Settings {
       // Get the legacy IDs of the paired business and volunteer opportunity
       $bus_legacy_id = $bus_record[ 'id' ];
       $vol_legacy_ids = array_map( function ( $vol ) { return $vol[ 'id' ]; }, $bus_record[ 'paired_volunteer_opportunities' ] );
-      gv_debug( sprintf( 'Business %s is paired with volunteer opportunity %s', $bus_legacy_id, implode( ' and ', $vol_legacy_ids ) ) );
-      // $bus_post = get_posts(
-      //   array(
-      //     'post_type' => 'business',
-      //     'fields' => 'ids',
-      //     'meta_key' => 'legacy_id',
-      //     'meta_value' => $bus_record[ 'id' ]
-      //   )
-      // );
-      // if ( empty( $bus_post ) ) {
-      //   gv_debug( 'No post found for legacy ID ' . $bus_record[ 'id' ] );
-      // } elseif ( count( $bus_post ) > 1 ) {
-      //   gv_debug( 'Found multiple posts for legacy ID ' . $bus_record[ 'id' ] );
-      // } else {
-      //   gv_debug( 'Found post ID ' . $bus_post[ 0 ] . ' with legacy id ' . $bus_record[ 'id' ] );
-      //   $bus_pod = pods( 'business', $bus_post[ 0 ] );
-      //   if ( $bus_pod->exists() ) {
-      //     gv_debug( 'Found the business pod' );
-      //   } else {
-      //     gv_debug( 'Could not find the business pod with legacy id ' . $bus_record[ 'id' ] );
-      //   }
-      // }
+      // gv_debug( sprintf( 'Business %s is paired with volunteer opportunity %s', $bus_legacy_id, implode( ' and ', $vol_legacy_ids ) ) );
+
+      // Get the get the business pods object from the legacy ID
+      $bus_pod = $this->gv_get_pod_from_legacy_id( $bus_legacy_id, 'business' );
+      if ( FALSE === $bus_pod ) {
+        // If the pod isn't found, continue
+        gv_debug( sprintf( 'Business pod with legacy ID %s not found, continue' ), $bus_legacy_id );
+        continue;
+      }
+
+      // Iterate across the paired volunteer opportunities...
+      foreach ( $vol_legacy_ids as $vol_legacy_id ) {
+        // Get the volunteer opportunity pods object from the legacy ID
+        $vol_post_id = $this->gv_get_post_id_from_legacy_id( $vol_legacy_id, 'vol_opportunity' );
+        if ( FALSE === $vol_post_id ) {
+          gv_debug( sprintf( 'Volunteer opportunity with legacy ID %s not found, continue', $vol_legacy_id ) );
+          continue;
+        }
+        $bus_pod->add_to( 'paired_vol_opps', $vol_post_id );
+      }
     }
+  }
+
+  private function gv_get_post_id_from_legacy_id( $legacy_id, $post_type ) {
+    $post_ids = get_posts( array(
+      'post_type' => $post_type,
+      'fields' => 'ids',
+      'meta_key' => 'legacy_id',
+      'meta_value' => $legacy_id,
+    ) );
+    // gv_debug( sprintf( 'Legacy ID %s matches %s %s post(s): %s', $legacy_id, count( $post_ids ), $post_type, implode( ', ', $post_ids ) ) );
+    if ( empty( $post_ids ) ) {
+      // If no matching posts were found, return FALSE
+      gv_debug( sprintf( 'Legacy ID %s-%s does not match any posts', $post_type, $legacy_id ) );
+      // Return FALSE to match the pods() strict call
+      return FALSE;
+    }
+    // Else, return the first ID found
+    // FIXME: Making the assumption that finding multiple matches shouldn't happen. Might need to check this in the future
+    return $post_ids[ 0 ];
+  }
+
+  private function gv_get_pod_from_post_id( $post_id, $post_type ) {
+    // Uses strict mode to return FALSE if the pod isn't found
+    return pods( $post_type, $post_id, TRUE );
+  }
+
+  private function gv_get_pod_from_legacy_id( $legacy_id, $post_type ) {
+      // FIXME: It should work to use pods()->find() to do this lookup in one step. It isn't working right now.
+      $post_id = $this->gv_get_post_id_from_legacy_id( $legacy_id, $post_type );
+      if ( FALSE === $post_id ) {
+        // Return FALSE if the post wasn't found
+        return FALSE;
+      }
+      // Else return the pods object
+      return $this->gv_get_pod_from_post_id( $post_id, $post_type );
   }
   
   // Import the legacy images and link to the associated volunteer opportunities
@@ -453,7 +486,26 @@ class GV_Settings {
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
 
-    gv_debug( 'Executing the import_images action' );
+    // Check to see if image archive and volunteer opportunities json was uploaded
+    $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
+    if ( empty( $uploaded_files[ 'images_archive' ] ) && empty( $uploaded_files[ 'volunteer_opportunities' ] ) ) {
+      // FIXME: Could technically try to link using only the data in already uploaded posts.
+      gv_debug( 'No image archive or volunteer opportunities json for import_images action' );
+      return;
+    }
+
+    // Open the volunteer opportunity json file
+    $vol_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    gv_debug( sprintf( 'Executing the import_images action on %s', $vol_file_path ) );
+    $vol_records = $this->gv_import_json( $vol_file_path );
+
+    // Unzip and un-tar the images archive
+    $archive_filename = $uploaded_files[ 'images_archive' ];
+    if ( $this->has_file_extension( $archive_filename, '.gz' ) ) {
+      // Unzip the archive
+      $p = new \PharData( sprintf( '%s/%s', $this->gv_upload_dir(), $archive_filename ) );
+      $p->decompress();
+    }
   }
 
   // TODO: Need to break this whole process into multiple steps.
