@@ -214,6 +214,11 @@ class GV_Settings {
     }
     return $gv_upload_dir;
   }
+
+  // Get the full path of a file in the gv_uploads directory
+  private function gv_upload_file_path( $filename ) {
+    return sprintf( '%s/%s', $this->gv_upload_dir(), $filename );
+  }
   
   // Process the uploaded files
   public function gv_upload_files() {
@@ -270,7 +275,7 @@ class GV_Settings {
       }
 
       // Copy file to uploads directory
-      if ( ! move_uploaded_file( $file[ 'tmp_name' ], sprintf( '%s/%s', $gv_upload_dir, $file[ 'name' ] ) ) ) {
+      if ( ! move_uploaded_file( $file[ 'tmp_name' ], $this->gv_upload_file_path( $file[ 'name' ] ) ) ) {
         gv_debug( 'Error copying file to uploads directory' );
         continue;
       }
@@ -288,10 +293,8 @@ class GV_Settings {
 
   // Delete a single uploaded file
   private function gv_delete_single_file( $file ) {
-    // Get the GV upload directory
-    $gv_upload_dir = $this->gv_upload_dir();
-    // Build the full filename
-    $filename = sprintf( '%s/%s', $gv_upload_dir, $file );
+    // Get the full path to the file
+    $filename = $this->gv_upload_file_path( $file );
     // Delete the file if it exists
     if ( file_exists( $filename ) ) {
       if ( ! unlink( $filename ) ) {
@@ -309,9 +312,6 @@ class GV_Settings {
     // Return if insufficient permissions
     if ( ! current_user_can( 'manage_options' ) ) return;
     
-    // Get the GV upload directory
-    $gv_upload_dir = $this->gv_upload_dir();
-
     // Delete the uploaded files found in options
     $uploaded_files = get_option( 'gv_import_uploaded_files', array() );
     foreach ( $uploaded_files as $file ) {
@@ -340,7 +340,7 @@ class GV_Settings {
     }
 
     // Open the file
-    $file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'businesses' ] );
+    $file_path = $this->gv_upload_file_path( $uploaded_files[ 'businesses' ] );
     gv_debug( 'Executing the import_businesses action on ' . $file_path );
     $records = $this->gv_import_json( $file_path );
 
@@ -366,7 +366,7 @@ class GV_Settings {
     }
 
     // Open the file
-    $file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    $file_path = $this->gv_upload_file_path( $uploaded_files[ 'volunteer_opportunities' ] );
     gv_debug( 'Executing the import_vol_opps action on ' . $file_path );
     $records = $this->gv_import_json( $file_path );
 
@@ -393,8 +393,8 @@ class GV_Settings {
     }
 
     // Open the files
-    $bus_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'businesses' ] );
-    $vol_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    $bus_file_path = $this->gv_upload_file_path( $uploaded_files[ 'businesses' ] );
+    $vol_file_path = $this->gv_upload_file_path( $uploaded_files[ 'volunteer_opportunities' ] );
     gv_debug( sprintf( 'Executing the link_bus_to_vol_opp action on %s and %s', $bus_file_path, $vol_file_path ) );
     $bus_records = $this->gv_import_json( $bus_file_path );
     $vol_records = $this->gv_import_json( $vol_file_path );
@@ -495,16 +495,171 @@ class GV_Settings {
     }
 
     // Open the volunteer opportunity json file
-    $vol_file_path = sprintf( '%s/%s', $this->gv_upload_dir(), $uploaded_files[ 'volunteer_opportunities' ] );
+    $vol_file_path = $this->gv_upload_file_path( $uploaded_files[ 'volunteer_opportunities' ] );
     gv_debug( sprintf( 'Executing the import_images action on %s', $vol_file_path ) );
     $vol_records = $this->gv_import_json( $vol_file_path );
 
-    // Unzip and un-tar the images archive
+    // Handle the images archive
+    // Detect if this is a .tar.gz or .tar archive
     $archive_filename = $uploaded_files[ 'images_archive' ];
-    if ( $this->has_file_extension( $archive_filename, '.gz' ) ) {
-      // Unzip the archive
-      $p = new \PharData( sprintf( '%s/%s', $this->gv_upload_dir(), $archive_filename ) );
+    $gzip_filename = '';
+    $tar_filename = '';
+    if ( $this->has_file_extension( $archive_filename, '.tar.gz' ) ) {
+      $gzip_filename = $archive_filename;
+      $tar_filename = substr( $gzip_filename, 0, -3 );
+    } elseif ( $this->has_file_extension( $archive_filename, '.tar' ) ) {
+      $tar_filename = $archive_filename;
+    }
+    $untar_directory = implode( '_', explode( '.', $tar_filename ) );
+
+    // If, for some reason, the images archive isn't at least a .tar file, return
+    gv_debug( sprintf( 'archive: (%s), gzip: (%s), tar: (%s), untar_dir: (%s)', $archive_filename, $gzip_filename, $tar_filename, $untar_directory ) );
+    if ( empty( $tar_filename ) ) return;
+
+    // This is going to be a memory and time intensive process, temporarily increase both
+    $memory_limit = ini_get( 'memory_limit' );
+    // gv_debug( 'Memory limit is: ' . $memory_limit );
+    ini_set( 'memory_limit', '1024MB' );
+
+
+    // Unzip the archive, if necessary
+    if ( $gzip_filename ) {
+      // Check if the unzipped tar file already exits
+      $tar_path = $this->gv_upload_file_path( $tar_filename );
+      if ( file_exists( $tar_path ) ) {
+        gv_debug( 'Tar images archive file already exists, unlinking' );
+        unlink( $tar_path );
+      }
+
+      // Unzip the file
+      $p = new \PharData( $this->gv_upload_file_path( $gzip_filename ) );
       $p->decompress();
+    }
+
+    // Check if the un-tar directory exists
+    $untar_path = $this->gv_upload_file_path( $untar_directory );
+    if ( file_exists( $untar_path ) && ! is_dir( $untar_path ) ) {
+      unlink( $untar_path );
+    }
+    if ( ! file_exists( $untar_path ) ) {
+      mkdir( $untar_path, 0755 );
+    }
+
+    // Un-tar the archive
+    $p = new \PharData( $this->gv_upload_file_path( $tar_filename ) );
+    $p->extractTo( $this->gv_upload_file_path( $untar_directory ), null, true );
+
+    // Check the existence of the images directory in the archive
+    // TODO: Could have it search for the directory, but that seem overkill for this application
+    $images_dir = $untar_path . '/apps/grassrootsvolunteering/shared/uploads/image/image';
+    if ( ! file_exists( $images_dir ) ) {
+      gv_debug( sprintf( 'The archive images directory (%s) does not exist', $images_dir ) );
+      return;
+    }
+    if ( ! is_dir( $images_dir ) ) {
+      gv_debug( sprintf( 'The archive images directory (%s) is not a directory', $images_dir ) );
+      return;
+    }
+    // gv_debug( 'The archive images directory exists' );
+
+    // Iterate across the volunteer opportunities and upload/link the images
+    foreach ( $vol_records as $record ) {
+      // Get the attached image info
+      // NOTE: At this time it doesn't seem necessary to pull out the image category info
+      $img_legacy_id = $record[ 'image' ][ 'id' ];
+      $img_name = $record[ 'image' ][ 'name' ];
+      $img_file = $record[ 'image' ][ 'image' ];
+
+      // Check for existence of the image in the archive
+      $img_path = sprintf( '%s/%s/%s', $images_dir, $img_legacy_id, $img_file );
+      if ( ! file_exists( $img_path ) ) {
+        gv_debug( sprintf( 'Image file does not exist (%s)', $img_path ) );
+        continue;
+      }
+      // Special case, there is one file that does not use a standard (.jpg/.jpeg) extension
+      if ( ! preg_match( '/\.(jpg|jpeg|png)$/i', $img_path ) ) {
+        $old_path = $img_path;
+        $new_file = preg_replace( '/^(.*)\.(jpg|jpeg|png).+$/i', '${1}.${2}', $img_file );
+        $new_path = sprintf( '%s/%s/%s', $images_dir, $img_legacy_id, $new_file );
+        gv_debug( sprintf( 'Renaming unexpected image file extension: %s => %s', $old_path, $new_path ) );
+        rename( $old_path, $new_path );
+        $img_path = $new_path;
+        $img_file = $new_file;
+      }
+      // gv_debug( sprintf( 'Image file exists (%s)', $img_path ) );
+
+      // Check that the volunteer opportunity exists
+      $vol_post_id = $this->gv_get_post_id_from_legacy_id( $record[ 'id' ], 'vol_opportunity' );
+      if ( FALSE === $vol_post_id ) {
+        gv_debug( sprintf( 'Volunteer opportunity with ID %s does not exist', $record[ 'id' ] ) );
+        continue;
+      }
+
+      // $tmp_filetype = wp_check_filetype( $img_path );
+      // if ( 'jpg' === $tmp_filetype[ 'ext' ] ) {
+      //   gv_debug( 'wp_check_filetype:' );
+      //   gv_debug( $tmp_filetype );
+      // }
+      // continue;
+
+      // Upload the image file
+      $upload = wp_upload_bits( $img_file, null, @file_get_contents( $img_path ) );
+      if ( $upload[ 'error' ] ) {
+        gv_debug( 'Error attempting to upload image file ' . $img_path );
+        gv_debug( $upload[ 'error' ] );
+        return;
+        continue;
+      }
+
+      // Create the attachment and attach to the volunteer opportunity
+      $filetype = wp_check_filetype( $img_file );
+      $args = array(
+        'post_mime_type' => $filetype[ 'type' ],
+        'post_parent' => $vol_post_id,
+        'post_title' => $img_name,
+        'post_content' => '',
+      );
+      $attachment_id = wp_insert_attachment( $args, $upload[ 'file' ], $vol_post_id );
+      update_post_meta( $attachment_id, '_wp_attachment_image_alt', $img_name );
+
+      // Check that the attachment was successfully generated
+      if ( ! is_wp_error( $attachment_id ) ) {
+        // Generate the intermediate image sizes (this step can take a long time)
+        // require_once( ABSPATH . 'wp-admin/includes/image.php' );
+        $attachment_data = wp_generate_attachment_metadata( $attachment_id, $upload[ 'file' ] );
+        wp_update_attachment_metadata( $attachment_id, $attachment_data );
+
+        // Attach the image to the volunteer opportunity
+        set_post_thumbnail( $vol_post_id, $attachment_id );
+      }
+
+    }
+
+    // Clean up after myself
+    // Delete the unzipped/un-tarred archive
+    // $this->gv_recursive_rmdir( $untar_path );
+    // If the original image archive file was a .tar.gz, delete the tar file
+    if ( ! empty( $gzip_filename ) ) {
+      unlink( $tar_path );
+    }
+  }
+
+  // Adapted from the PHP docs: https://www.php.net/manual/en/function.rmdir.php#98622
+  private function gv_recursive_rmdir( $dir ) {
+    if ( is_dir( $dir ) ) {
+      $objs = scandir( $dir );
+      foreach ( $objs as $obj ) {
+        if ( $obj !== '.' && $obj !== '..' ) {
+          $obj_path = sprintf( '%s/%s', $dir, $obj );
+          if ( is_dir( $obj_path ) ) {
+            $this->gv_recursive_rmdir( $obj_path );
+          } else {
+            unlink( $obj_path );
+          }
+        }
+        reset( $objs );
+        rmdir( $dir );
+      }
     }
   }
 
