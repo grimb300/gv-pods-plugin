@@ -12,6 +12,7 @@ class GV_Plugin {
 
   public $gv_settings;
   public $gv_edit_screen;
+  public $gv_blocks;
 
   /* *******
    * Methods
@@ -34,6 +35,10 @@ class GV_Plugin {
     // TODO: Should this only be instantiated on admin screens?
     require_once GV_PLUGIN_PATH . 'includes/class-gv-edit-screen.php';
     $this->gv_edit_screen = new GV_Edit_Screen();
+
+    // Instantiate the custom GV blocks
+    require_once GV_PLUGIN_PATH . 'includes/class-gv-blocks.php';
+    $this->gv_blocks = new GV_Blocks();
 
   }
 
