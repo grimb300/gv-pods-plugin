@@ -77,37 +77,62 @@ class GV_Blocks {
     add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_blocks' ) );
     // Register the GV blocks within that collection
     // add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_block_types' ) );
-  }
+
+    // Instantiate the custom block objects
+    $business_name_block = new GV_Generic_Block( array(
+      'field_name' => 'business_name',
+      'post_type' => 'business',
+    ) );
+    // Location returns an array, needs more work/customization
+    // $location_block = new GV_Generic_Block( array(
+    //   'field_name' => 'location',
+    //   'post_type' => 'business',
+    // ) );
+    $short_location_block = new GV_Generic_Block( array(
+      'field_name' => 'short_location',
+      'post_type' => 'business',
+    ) );
+
+  }  
 
   public function register_gv_custom_blocks() {
+
+    // Create the generic collection for testing purposes
+    $collection = array(
+      'namespace' => 'gv-generic-block-collection',
+      'title' => __( 'GV Generic Blocks' ),
+      'icon' => 'admin-site-alt3',
+    );  
+    pods_register_block_collection( $collection );
+
     // TODO: This is starting out as a brute force
     // Create the collections
-    foreach ( $this->gv_blocks_collection_namespace as $post_type => $namespace ) {
-      $collection = array(
-        'namespace' => $namespace,
-        'title' => __( 'GV ' . $post_type . ' Blocks' ),
-        'icon' => 'admin-site-alt3',
-      );
-      pods_register_block_collection( $collection );
-    }
+    // foreach ( $this->gv_blocks_collection_namespace as $post_type => $namespace ) {
+    //   $collection = array(
+    //     'namespace' => $namespace,
+    //     'title' => __( 'GV ' . $post_type . ' Blocks' ),
+    //     'icon' => 'admin-site-alt3',
+    //   );
+    //   pods_register_block_collection( $collection );
+    // }
 
     // Create the blocks
-    foreach ( $this->gv_blocks_defs as $block_def ) {
-      $field_name = $block_def[ 'field_name' ];
-      $post_type = $block_def[ 'post_type' ];
-      $block = array(
-        'namespace' => $this->gv_blocks_namespace[ $post_type ],
-        'name' => $field_name,
-        'title' => $field_name,
-        'description' => __( 'This is a ' . $field_name ),
-        'category' => $this->gv_blocks_collection_namespace[ $post_type ],
-        'icon' => 'admin-site-alt3',
-        'keywords' => array( 'Grassroots Volunteering', $field_name ),
-        'render_type' => 'php',
-        'render_callback' => array( $this, 'generic_render' ),
-      );
-      pods_register_block_type( $block, $block_def[ 'attributes' ] );
-    }
+    // foreach ( $this->gv_blocks_defs as $block_def ) {
+    //   $field_name = $block_def[ 'field_name' ];
+    //   $post_type = $block_def[ 'post_type' ];
+    //   $block = array(
+    //     'namespace' => $this->gv_blocks_namespace[ $post_type ],
+    //     'name' => $field_name,
+    //     'title' => $field_name,
+    //     'description' => __( 'This is a ' . $field_name ),
+    //     'category' => $this->gv_blocks_collection_namespace[ $post_type ],
+    //     'icon' => 'admin-site-alt3',
+    //     'keywords' => array( 'Grassroots Volunteering', $field_name ),
+    //     'render_type' => 'php',
+    //     'render_callback' => array( $this, 'generic_render' ),
+    //   );
+    //   pods_register_block_type( $block, $block_def[ 'attributes' ] );
+    // }
   }
 
   public function register_gv_custom_block_types() {
@@ -206,4 +231,85 @@ class GV_Blocks {
     return implode( '', $render_string );
   }
 
+}
+
+// Generic custom block
+class GV_Generic_Block {
+
+  /* **********
+   * Properties
+   * **********/
+
+  protected $field_name = 'generic_field';
+  protected $post_type = 'generic_post_type';
+  protected $field_title = 'GV Generic Block';
+  protected $field_description = 'Generic Grassroots Volunteering custom block';
+  protected $block_collection = 'gv-generic-block-collection';
+  protected $attributes = array();
+
+   /* *******
+   * Methods
+   * *******/
+
+  // Constructor
+  public function __construct( $params = array() ) {
+    // Update any properties passed through the constructor
+    foreach ( $params as $param => $val ) {
+      if ( 'field_name' === $param ) $this->field_name = $val;
+      if ( 'post_type' == $param ) $this->post_type = $val;
+      if ( 'field_title' == $param ) $this->field_title = $val;
+      if ( 'field_description' == $param ) $this->field_description = $val;
+      if ( 'block_collection' == $param ) $this->block_collection = $val;
+      if ( 'attributes' == $param ) $this->attributes = $val;
+    }
+
+    // To give each block a unique title, passing field_name without field_title will update field title
+    if ( array_key_exists( 'field_name', $params ) && ! array_key_exists( 'field_title', $params ) ) {
+      $this->field_title = sprintf( '%s - %s', $this->field_title, $params[ 'field_name' ] );
+    }
+
+    // Register the block
+    add_action( 'pods_blocks_api_init', array( $this, 'register_block' ) );
+  }
+
+  // Register this block
+  public function register_block() {
+    $block = array(
+      'namespace' => $this->block_collection,
+      'name' => $this->field_name,
+      'title' => __( $this->field_title ),
+      'description' => __( $this->field_description ),
+      'category' => $this->block_collection,
+      'icon' => 'admin-site-alt3',
+      'keywords' => array( 'Grassroots Volunteering', $this->field_name ),
+      'render_type' => 'php',
+      'render_callback' => array( $this, 'render_block' ),
+    );
+    pods_register_block_type( $block, $this->attributes );
+  }
+
+  public function render_block( $attributes ) {
+    global $post;
+
+    // Check that this is the right post type
+    if ( $this->post_type !== $post->post_type ) {
+      return sprintf( '<p style="color: red"><strong><em>This block can only be used on GV "%s" post types!</em></strong></p>', $this->post_type );
+    }
+    
+    // Get the pod
+    $pod = pods( $this->post_type, $post->ID );
+    if ( ! $pod->exists() ) {
+      return sprintf( '<p style="color: red"><strong><em>Unable to load pods for this post!</em></strong></p>', $this->post_type );
+    }
+    
+    // Get the field data
+    $field_data = $pod->field( $this->field_name );
+    if ( null === $field_data ) {
+      return sprintf( '<p style="color: red"><strong><em>Unable to load data for field %s!</em></strong></p>', $this->field_name );
+    }
+
+    // Display the field
+    $class = sprintf( 'gv_block-%s-%s', $this->post_type, $this->field_name );
+    return sprintf( '<div class="%s">%s</div>', $class, $field_data );
+  }
 }
