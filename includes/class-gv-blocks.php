@@ -10,8 +10,62 @@ class GV_Blocks {
    * Properties
    * **********/
 
-  public $gv_blocks_namespace = 'gv-custom-blocks';
-  public $gv_blocks_collection_namespace = 'gv-custom-blocks-collection';
+  public $gv_blocks_namespace = array(
+    'business' => 'gv-business-blocks',
+    'vol_opportunity' => 'gv-vol-opportunity-blocks',
+  );
+  public $gv_blocks_collection_namespace = array(
+    'business' => 'gv-business-blocks-collection',
+    'vol_opportunity' => 'gv-vol-opportunity-blocks-collection',
+  );
+
+  private $gv_blocks_defs = array(
+    array(
+      'post_type' => 'business',
+      'field_name' => 'business_name',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'location',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'short_location',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'address',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'description',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'hours',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'phone_numbers',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'url',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'paired_vol_opps',
+      'attributes' => array(),
+    ),
+  );
 
   /* *******
    * Methods
@@ -20,18 +74,40 @@ class GV_Blocks {
   // Constructor
   public function __construct() {
     // Register the GV blocks collection
-    add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_blocks_collection' ) );
+    add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_blocks' ) );
     // Register the GV blocks within that collection
-    add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_block_types' ) );
+    // add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_block_types' ) );
   }
 
-  public function register_gv_custom_blocks_collection() {
-    $collection = array(
-      'namespace' => $this->gv_blocks_collection_namespace,
-      'title' => __( 'Grassroots Volunteering' ),
-      'icon' => 'admin-site-alt3',
-    );
-    pods_register_block_collection( $collection );
+  public function register_gv_custom_blocks() {
+    // TODO: This is starting out as a brute force
+    // Create the collections
+    foreach ( $this->gv_blocks_collection_namespace as $post_type => $namespace ) {
+      $collection = array(
+        'namespace' => $namespace,
+        'title' => __( 'GV ' . $post_type . ' Blocks' ),
+        'icon' => 'admin-site-alt3',
+      );
+      pods_register_block_collection( $collection );
+    }
+
+    // Create the blocks
+    foreach ( $this->gv_blocks_defs as $block_def ) {
+      $field_name = $block_def[ 'field_name' ];
+      $post_type = $block_def[ 'post_type' ];
+      $block = array(
+        'namespace' => $this->gv_blocks_namespace[ $post_type ],
+        'name' => $field_name,
+        'title' => $field_name,
+        'description' => __( 'This is a ' . $field_name ),
+        'category' => $this->gv_blocks_collection_namespace[ $post_type ],
+        'icon' => 'admin-site-alt3',
+        'keywords' => array( 'Grassroots Volunteering', $field_name ),
+        'render_type' => 'php',
+        'render_callback' => array( $this, 'generic_render' ),
+      );
+      pods_register_block_type( $block, $block_def[ 'attributes' ] );
+    }
   }
 
   public function register_gv_custom_block_types() {
@@ -94,9 +170,17 @@ class GV_Blocks {
     pods_register_block_type( $block, $fields );
   }
 
+  public function generic_render( array $attr ) {
+    return 'This is the generic_render() function';
+  }
+
   public function business_name_render( array $attr ) {
     // Get the business_name field
-    $business_name = 'Example Business Name';
+    global $post;
+    gv_debug( 'Current post' );
+    gv_debug( $post );
+    $business_pod = pods( 'business', $post->ID );
+    $business_name = $business_pod->exists() ? $business_pod->field( 'business_name', true ) : 'Invalid business pod';
     $render_string = array( $business_name );
 
     // If 'bold', add <strong>...</strong>
