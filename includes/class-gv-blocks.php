@@ -15,54 +15,103 @@ class GV_Blocks {
     'vol_opportunity' => 'gv-vol-opportunity-blocks',
   );
   public $gv_blocks_collection_namespace = array(
-    'business' => 'gv-business-blocks-collection',
-    'vol_opportunity' => 'gv-vol-opportunity-blocks-collection',
+    'business' => array(
+      'namespace' => 'gv-business-blocks-collection',
+      'title' => 'GV Business Blocks',
+    ),
+    'vol_opportunity' => array(
+      'namespace' => 'gv-vol-opportunity-blocks-collection',
+      'title' => 'GV Volunteer Opportunity Blocks',
+    ),
   );
 
   private $gv_blocks_defs = array(
     array(
       'post_type' => 'business',
       'field_name' => 'business_name',
+      'field_title' => 'Business Name',
+      'field_description' => 'Display the name of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'location',
+      'field_title' => 'Location',
+      'field_description' => 'Display the location of the business on a map (NOT WORKING)',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'short_location',
+      'field_title' => 'Short Location',
+      'field_description' => 'Display the short location of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'address',
+      'field_title' => 'Address',
+      'field_description' => 'Display the address of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'description',
+      'field_title' => 'Description',
+      'field_description' => 'Display the description of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'hours',
+      'field_title' => 'Hours',
+      'field_description' => 'Display the hours of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'phone_numbers',
+      'field_title' => 'Phone Numbers',
+      'field_description' => 'Display the phone numbers of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'url',
+      'field_title' => 'Website URL',
+      'field_description' => 'Display the URL of the business website',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
     array(
       'post_type' => 'business',
       'field_name' => 'paired_vol_opps',
+      'field_title' => 'Paired Volunteer Opportunity',
+      'field_description' => 'Display the paired volunteer opportunity of the business',
+      'block_collection' => 'gv-business-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'business_location',
+      'field_title' => 'Business Locations',
+      'field_description' => 'Display the business location taxonomy of the business',
+      'block_collection' => 'gv-business-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'business_type',
+      'field_title' => 'Business Types',
+      'field_description' => 'Display the business type taxonomy of the business',
+      'block_collection' => 'gv-business-blocks-collection',
       'attributes' => array(),
     ),
   );
@@ -79,19 +128,24 @@ class GV_Blocks {
     // add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_block_types' ) );
 
     // Instantiate the custom block objects
-    $business_name_block = new GV_Generic_Block( array(
-      'field_name' => 'business_name',
-      'post_type' => 'business',
-    ) );
+    foreach ( $this->gv_blocks_defs as $def ) {
+      $block = new GV_Generic_Block( $def );
+    }
+
+    // Instantiate the custom block objects
+    // $business_name_block = new GV_Generic_Block( array(
+    //   'field_name' => 'business_name',
+    //   'post_type' => 'business',
+    // ) );
     // Location returns an array, needs more work/customization
     // $location_block = new GV_Generic_Block( array(
     //   'field_name' => 'location',
     //   'post_type' => 'business',
     // ) );
-    $short_location_block = new GV_Generic_Block( array(
-      'field_name' => 'short_location',
-      'post_type' => 'business',
-    ) );
+    // $short_location_block = new GV_Generic_Block( array(
+    //   'field_name' => 'short_location',
+    //   'post_type' => 'business',
+    // ) );
 
   }  
 
@@ -105,16 +159,15 @@ class GV_Blocks {
     );  
     pods_register_block_collection( $collection );
 
-    // TODO: This is starting out as a brute force
     // Create the collections
-    // foreach ( $this->gv_blocks_collection_namespace as $post_type => $namespace ) {
-    //   $collection = array(
-    //     'namespace' => $namespace,
-    //     'title' => __( 'GV ' . $post_type . ' Blocks' ),
-    //     'icon' => 'admin-site-alt3',
-    //   );
-    //   pods_register_block_collection( $collection );
-    // }
+    foreach ( $this->gv_blocks_collection_namespace as $post_type => $info ) {
+      $collection = array(
+        'namespace' => $info[ 'namespace' ],
+        'title' => __( $info[ 'title' ] ),
+        'icon' => 'admin-site-alt3',
+      );
+      pods_register_block_collection( $collection );
+    }
 
     // Create the blocks
     // foreach ( $this->gv_blocks_defs as $block_def ) {
@@ -310,6 +363,15 @@ class GV_Generic_Block {
 
     // Display the field
     $class = sprintf( 'gv_block-%s-%s', $this->post_type, $this->field_name );
-    return sprintf( '<div class="%s">%s</div>', $class, $field_data );
+    $field_heading = sprintf( '<h4>%s</h4>', $this->field_name );
+    $display_field_data = $field_data;
+    if ( is_array( $field_data ) ) {
+      $display_field_data = sprintf( '<code>%s</code>', var_export( $field_data, true ) );
+    } elseif ( FALSE === $field_data ) {
+      $display_field_data = 'field() returned FALSE';
+    } elseif ( '' === $field_data ) {
+      $display_field_data = 'field() returned empty string';
+    }
+    return sprintf( '%s<div class="%s">%s</div>', $field_heading, $class, $display_field_data );
   }
 }
