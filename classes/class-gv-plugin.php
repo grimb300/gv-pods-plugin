@@ -28,16 +28,16 @@ class GV_Plugin {
     add_action( 'wp_enqueue_scripts', array( $this, 'gv_jquery_in_head' ), 1 );
 
     // Instantiate the settings class
-    require_once GV_PLUGIN_PATH . 'includes/class-gv-settings.php';
+    require_once GV_PLUGIN_PATH . 'classes/class-gv-settings.php';
     $this->gv_settings = new GV_Settings();
     
     // Instantiate the edit screen customization class
     // TODO: Should this only be instantiated on admin screens?
-    require_once GV_PLUGIN_PATH . 'includes/class-gv-edit-screen.php';
+    require_once GV_PLUGIN_PATH . 'classes/class-gv-edit-screen.php';
     $this->gv_edit_screen = new GV_Edit_Screen();
 
     // Instantiate the custom GV blocks
-    require_once GV_PLUGIN_PATH . 'includes/class-gv-blocks.php';
+    require_once GV_PLUGIN_PATH . 'classes/class-gv-blocks.php';
     $this->gv_blocks = new GV_Blocks();
 
   }

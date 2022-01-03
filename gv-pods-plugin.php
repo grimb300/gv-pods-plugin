@@ -37,7 +37,7 @@ function gv_debug( $msg ) {
  */
 
 if ( ! class_exists( 'GV_Plugin' ) ) {
-  require_once GV_PLUGIN_PATH . 'includes/class-gv-plugin.php';
+  require_once GV_PLUGIN_PATH . 'classes/class-gv-plugin.php';
 
   $gv = new GV_Plugin();
   register_activation_hook( __FILE__, array( $gv, 'gv_activation' ) );
