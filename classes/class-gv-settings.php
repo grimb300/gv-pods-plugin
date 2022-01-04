@@ -861,6 +861,12 @@ class GV_Settings {
       // Check to see if this legacy ID has already been converted
       $post_id = $this->get_post_id_from_legacy_id( 'business', $business[ 'id' ] );
       if ( 0 === $post_id ) {
+        // Modify the phone numbers array into something useful
+        $mod_phone_nums = array();
+        foreach ( $business[ 'phone_numbers' ] as $i => $n ) {
+          $mod_phone_nums[ 'number_' . $i ] =  $n[ 'number' ];
+          $mod_phone_nums[ 'description_' . $i ] = $n[ 'description' ];
+        }
         // Business doesn't exist, insert
         $post_id = wp_insert_post( array(
           'post_content' => $business[ 'description' ][ 'full' ][ 'html' ],
@@ -881,7 +887,9 @@ class GV_Settings {
             'address' => $business[ 'address' ],
             'description' => $business[ 'description' ][ 'full' ][ 'html' ],
             'hours' => $business[ 'hours' ][ 'html' ],
-            'phone_numbers' => serialize( $business[ 'phone_numbers' ] ),
+            // Use the filtered and modified phone number array from above
+            // 'phone_numbers' => serialize( $business[ 'phone_numbers' ] ),
+            'phone_numbers' => $mod_phone_nums,
             'url' => $business[ 'url' ],
             'legacy_id' => $business[ 'id' ],
             'legacy_business_types' => implode( ', ', $stringified_business_types ),
