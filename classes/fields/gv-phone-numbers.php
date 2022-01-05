@@ -39,6 +39,9 @@ class PodsField_GV_Phone_Numbers extends PodsField {
     // This is a value that pods-address-field uses, not sure what it does yet
     $form_field_type = PodsForm::$field_type;
 
+    // Get the max count of phone numbers out of the options
+    $max_phone_numbers = pods_v( self::$type . '_count', $options, '3' );
+
     $view = GV_PLUGIN_PATH . 'ui/fields/gv-phone-numbers.php';
     // TODO: pods-address-field example adds a filter here to allow other plugins to change the view
 
