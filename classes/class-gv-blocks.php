@@ -32,6 +32,8 @@ class GV_Blocks {
 
   private $gv_blocks_classes = array(
     'GV_Location_Block' => 'class-gv-location-block.php',
+    'GV_Phone_Numbers_Block' => 'class-gv-phone-numbers-block.php',
+    'GV_Paired_Entry_Block' => 'class-gv-paired-entry-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -90,6 +92,7 @@ class GV_Blocks {
       'field_title' => 'Phone Numbers',
       'field_description' => 'Display the phone numbers of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Phone_Numbers_Block',
       'attributes' => array(),
     ),
     array(
@@ -106,6 +109,7 @@ class GV_Blocks {
       'field_title' => 'Paired Volunteer Opportunity',
       'field_description' => 'Display the paired volunteer opportunity of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Paired_Entry_Block',
       'attributes' => array(),
     ),
     array(
