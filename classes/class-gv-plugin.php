@@ -36,9 +36,16 @@ class GV_Plugin {
     require_once GV_PLUGIN_PATH . 'classes/class-gv-edit-screen.php';
     $this->gv_edit_screen = new GV_Edit_Screen();
 
+    // // Example from the Pods docs
+    // require_once GV_PLUGIN_PATH . 'examples/pods-custom-blocks.php';
+    
     // Instantiate the custom GV blocks
     require_once GV_PLUGIN_PATH . 'classes/class-gv-blocks.php';
+    // require_once GV_PLUGIN_PATH . 'classes/class-gv-blocks-new.php';
     $this->gv_blocks = new GV_Blocks();
+
+    // Example from the Pods docs (testing ordering)
+    // require_once GV_PLUGIN_PATH . 'examples/pods-custom-blocks.php';
 
     // Register the GV Phone Numbers field type
     add_action( 'plugins_loaded', array( $this, 'gv_phone_numbers_field_init'), 20 );

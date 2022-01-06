@@ -1,6 +1,4 @@
 <?php
-error_log( 'Value is' );
-error_log( var_export( $value, true ) );
 
 // TODO: pods-address-field example has a "default format" and a user defined "custom format"
 //       It then runs the appropriate format through a preg/str_replace to turn that into html.

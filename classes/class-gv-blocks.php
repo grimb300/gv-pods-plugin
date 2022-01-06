@@ -10,19 +10,28 @@ class GV_Blocks {
    * Properties
    * **********/
 
-  public $gv_blocks_namespace = array(
+  private $gv_blocks_namespace = array(
     'business' => 'gv-business-blocks',
     'vol_opportunity' => 'gv-vol-opportunity-blocks',
   );
-  public $gv_blocks_collection_namespace = array(
-    'business' => array(
-      'namespace' => 'gv-business-blocks-collection',
-      'title' => 'GV Business Blocks',
+  private $gv_blocks_collections = array(
+    'default' => array(
+      'namespace' => 'gv-default-block-collection',
+      'title' => 'GV Blocks',
     ),
-    'vol_opportunity' => array(
-      'namespace' => 'gv-vol-opportunity-blocks-collection',
-      'title' => 'GV Volunteer Opportunity Blocks',
-    ),
+    // TODO: Waiting to hear back from the Pods devs about registering multiple collections
+    // 'business' => array(
+    //   'namespace' => 'gv-business-blocks-collection',
+    //   'title' => 'GV Business Blocks',
+    // ),
+    // 'vol_opportunity' => array(
+    //   'namespace' => 'gv-vol-opportunity-blocks-collection',
+    //   'title' => 'GV Volunteer Opportunity Blocks',
+    // ),
+  );
+
+  private $gv_blocks_classes = array(
+    'GV_Location_Block' => 'class-gv-location-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -40,6 +49,7 @@ class GV_Blocks {
       'field_title' => 'Location',
       'field_description' => 'Display the location of the business on a map (NOT WORKING)',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Location_Block',
       'attributes' => array(),
     ),
     array(
@@ -122,70 +132,43 @@ class GV_Blocks {
 
   // Constructor
   public function __construct() {
-    // Register the GV blocks collection
-    add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_blocks' ) );
-    // Register the GV blocks within that collection
-    // add_action( 'pods_blocks_api_init', array( $this, 'register_gv_custom_block_types' ) );
+    // Register the GV blocks collections
+    add_action( 'pods_blocks_api_init', array( $this, 'register_gv_block_collections' ) );
 
     // Instantiate the custom block objects
     foreach ( $this->gv_blocks_defs as $def ) {
-      $block = new GV_Generic_Block( $def );
+      // Force each block into the default collection (for now)
+      $def[ 'block_collection' ] = $this->gv_blocks_collections[ 'default' ][ 'namespace' ];
+      // Get the namespace based on the post_type
+      $def[ 'namespace' ] = $this->gv_blocks_namespace[ $def[ 'post_type' ] ];
+
+      // If block_class is defined, use that block
+      if ( ! empty( $def[ 'block_class' ] ) ) {
+        $block_class = $def[ 'block_class' ];
+        $block_class_file = GV_PLUGIN_PATH . 'classes/blocks/' . $this->gv_blocks_classes[ $block_class ];
+        gv_debug( sprintf( 'Going to load %s from %s', $block_class, $block_class_file ) ); 
+        require_once $block_class_file;
+        $classname = 'GVPlugin\\' . $block_class;
+        $block = new $classname( $def );
+      } else {
+        // Use the default block
+        require_once GV_PLUGIN_PATH . 'classes/blocks/class-gv-default-block.php';
+        $block = new GV_Default_Block( $def );
+      }
     }
-
-    // Instantiate the custom block objects
-    // $business_name_block = new GV_Generic_Block( array(
-    //   'field_name' => 'business_name',
-    //   'post_type' => 'business',
-    // ) );
-    // Location returns an array, needs more work/customization
-    // $location_block = new GV_Generic_Block( array(
-    //   'field_name' => 'location',
-    //   'post_type' => 'business',
-    // ) );
-    // $short_location_block = new GV_Generic_Block( array(
-    //   'field_name' => 'short_location',
-    //   'post_type' => 'business',
-    // ) );
-
   }  
 
-  public function register_gv_custom_blocks() {
-
-    // Create the generic collection for testing purposes
-    $collection = array(
-      'namespace' => 'gv-generic-block-collection',
-      'title' => __( 'GV Generic Blocks' ),
-      'icon' => 'admin-site-alt3',
-    );  
-    pods_register_block_collection( $collection );
-
+  public function register_gv_block_collections() {
     // Create the collections
-    foreach ( $this->gv_blocks_collection_namespace as $post_type => $info ) {
+    foreach ( $this->gv_blocks_collections as $post_type => $info ) {
       $collection = array(
         'namespace' => $info[ 'namespace' ],
         'title' => __( $info[ 'title' ] ),
-        'icon' => 'admin-site-alt3',
+        // 'icon' => 'admin-site-alt3',
       );
+      // gv_debug( sprintf( 'Registering block collection %s (%s)', $info[ 'title' ], $info[ 'namespace' ] ) );
       pods_register_block_collection( $collection );
     }
-
-    // Create the blocks
-    // foreach ( $this->gv_blocks_defs as $block_def ) {
-    //   $field_name = $block_def[ 'field_name' ];
-    //   $post_type = $block_def[ 'post_type' ];
-    //   $block = array(
-    //     'namespace' => $this->gv_blocks_namespace[ $post_type ],
-    //     'name' => $field_name,
-    //     'title' => $field_name,
-    //     'description' => __( 'This is a ' . $field_name ),
-    //     'category' => $this->gv_blocks_collection_namespace[ $post_type ],
-    //     'icon' => 'admin-site-alt3',
-    //     'keywords' => array( 'Grassroots Volunteering', $field_name ),
-    //     'render_type' => 'php',
-    //     'render_callback' => array( $this, 'generic_render' ),
-    //   );
-    //   pods_register_block_type( $block, $block_def[ 'attributes' ] );
-    // }
   }
 
   public function register_gv_custom_block_types() {
@@ -194,7 +177,7 @@ class GV_Blocks {
       'name' => 'business-name',
       'title' => __( 'Business Name' ),
       'description' => __( 'The name of the business.' ),
-      'category' => $this->gv_blocks_collection_namespace,
+      'category' => $this->gv_blocks_collections,
       'icon' => 'admin-site-alt3',
       'keywords' => array( 'GrassrootsVolunteering', 'business-name' ),
       'render_type' => 'php',
@@ -284,94 +267,4 @@ class GV_Blocks {
     return implode( '', $render_string );
   }
 
-}
-
-// Generic custom block
-class GV_Generic_Block {
-
-  /* **********
-   * Properties
-   * **********/
-
-  protected $field_name = 'generic_field';
-  protected $post_type = 'generic_post_type';
-  protected $field_title = 'GV Generic Block';
-  protected $field_description = 'Generic Grassroots Volunteering custom block';
-  protected $block_collection = 'gv-generic-block-collection';
-  protected $attributes = array();
-
-   /* *******
-   * Methods
-   * *******/
-
-  // Constructor
-  public function __construct( $params = array() ) {
-    // Update any properties passed through the constructor
-    foreach ( $params as $param => $val ) {
-      if ( 'field_name' === $param ) $this->field_name = $val;
-      if ( 'post_type' == $param ) $this->post_type = $val;
-      if ( 'field_title' == $param ) $this->field_title = $val;
-      if ( 'field_description' == $param ) $this->field_description = $val;
-      if ( 'block_collection' == $param ) $this->block_collection = $val;
-      if ( 'attributes' == $param ) $this->attributes = $val;
-    }
-
-    // To give each block a unique title, passing field_name without field_title will update field title
-    if ( array_key_exists( 'field_name', $params ) && ! array_key_exists( 'field_title', $params ) ) {
-      $this->field_title = sprintf( '%s - %s', $this->field_title, $params[ 'field_name' ] );
-    }
-
-    // Register the block
-    add_action( 'pods_blocks_api_init', array( $this, 'register_block' ) );
-  }
-
-  // Register this block
-  public function register_block() {
-    $block = array(
-      'namespace' => $this->block_collection,
-      'name' => $this->field_name,
-      'title' => __( $this->field_title ),
-      'description' => __( $this->field_description ),
-      'category' => $this->block_collection,
-      'icon' => 'admin-site-alt3',
-      'keywords' => array( 'Grassroots Volunteering', $this->field_name ),
-      'render_type' => 'php',
-      'render_callback' => array( $this, 'render_block' ),
-    );
-    pods_register_block_type( $block, $this->attributes );
-  }
-
-  public function render_block( $attributes ) {
-    global $post;
-
-    // Check that this is the right post type
-    if ( $this->post_type !== $post->post_type ) {
-      return sprintf( '<p style="color: red"><strong><em>This block can only be used on GV "%s" post types!</em></strong></p>', $this->post_type );
-    }
-    
-    // Get the pod
-    $pod = pods( $this->post_type, $post->ID );
-    if ( ! $pod->exists() ) {
-      return sprintf( '<p style="color: red"><strong><em>Unable to load pods for this post!</em></strong></p>', $this->post_type );
-    }
-    
-    // Get the field data
-    $field_data = $pod->field( $this->field_name );
-    if ( null === $field_data ) {
-      return sprintf( '<p style="color: red"><strong><em>Unable to load data for field %s!</em></strong></p>', $this->field_name );
-    }
-
-    // Display the field
-    $class = sprintf( 'gv_block-%s-%s', $this->post_type, $this->field_name );
-    $field_heading = sprintf( '<h4>%s</h4>', $this->field_name );
-    $display_field_data = $field_data;
-    if ( is_array( $field_data ) ) {
-      $display_field_data = sprintf( '<code>%s</code>', var_export( $field_data, true ) );
-    } elseif ( FALSE === $field_data ) {
-      $display_field_data = 'field() returned FALSE';
-    } elseif ( '' === $field_data ) {
-      $display_field_data = 'field() returned empty string';
-    }
-    return sprintf( '%s<div class="%s">%s</div>', $field_heading, $class, $display_field_data );
-  }
 }
