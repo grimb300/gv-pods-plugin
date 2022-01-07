@@ -34,6 +34,7 @@ class GV_Blocks {
     'GV_Location_Block' => 'class-gv-location-block.php',
     'GV_Phone_Numbers_Block' => 'class-gv-phone-numbers-block.php',
     'GV_Paired_Entry_Block' => 'class-gv-paired-entry-block.php',
+    'GV_Taxonomy_Block' => 'class-gv-taxonomy-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -118,6 +119,7 @@ class GV_Blocks {
       'field_title' => 'Business Locations',
       'field_description' => 'Display the business location taxonomy of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
     array(
@@ -126,6 +128,7 @@ class GV_Blocks {
       'field_title' => 'Business Types',
       'field_description' => 'Display the business type taxonomy of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
   );
@@ -150,7 +153,7 @@ class GV_Blocks {
       if ( ! empty( $def[ 'block_class' ] ) ) {
         $block_class = $def[ 'block_class' ];
         $block_class_file = GV_PLUGIN_PATH . 'classes/blocks/' . $this->gv_blocks_classes[ $block_class ];
-        gv_debug( sprintf( 'Going to load %s from %s', $block_class, $block_class_file ) ); 
+        // gv_debug( sprintf( 'Going to load %s from %s', $block_class, $block_class_file ) ); 
         require_once $block_class_file;
         $classname = 'GVPlugin\\' . $block_class;
         $block = new $classname( $def );
