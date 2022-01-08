@@ -131,7 +131,151 @@ class GV_Blocks {
       'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
-  );
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_name',
+      'field_title' => 'Volunteer Name',
+      'field_description' => 'Display the name of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'short_location',
+      'field_title' => 'Short Location',
+      'field_description' => 'Display the short location of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'organization_url',
+      'field_title' => 'Organization URL',
+      'field_description' => 'Display the organization url of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_url',
+      'field_title' => 'Volunteer URL',
+      'field_description' => 'Display the volunteer url of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'facebook_url',
+      'field_title' => 'Facebook URL',
+      'field_description' => 'Display the Facebook url of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'twitter_username',
+      'field_title' => 'Twitter Username',
+      'field_description' => 'Display the Twitter username of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'min_duration',
+      'field_title' => 'Minimum Duration',
+      'field_description' => 'Display the minimum duration of the volunteer opportunity (remove?)',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'max_duration',
+      'field_title' => 'Maximum Duration',
+      'field_description' => 'Display the maximum duration of the volunteer opportunity (remove?)',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'duration_notes',
+      'field_title' => 'Duration Notes',
+      'field_description' => 'Display the duration notes of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'description',
+      'field_title' => 'Description',
+      'field_description' => 'Display the description of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'cost_suggestion',
+      'field_title' => 'Cost Suggestion',
+      'field_description' => 'Display the cost suggestion of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'fees_notes',
+      'field_title' => 'Fees Notes',
+      'field_description' => 'Display the fees notes of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'other_ways_to_help',
+      'field_title' => 'Other Ways to Help',
+      'field_description' => 'Display the other ways to help of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'contact_info',
+      'field_title' => 'Contact Info',
+      'field_description' => 'Display the contact info of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_type',
+      'field_title' => 'Volunteer Types',
+      'field_description' => 'Display the volunteer types of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_location',
+      'field_title' => 'Volunteer Locations',
+      'field_description' => 'Display the volunteer locations of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_cost_label',
+      'field_title' => 'Volunteer Cost Label',
+      'field_description' => 'Display the volunteer cost label of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'volunteer_duration',
+      'field_title' => 'Volunteer Duration',
+      'field_description' => 'Display the volunteer duration of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'attributes' => array(),
+    ),
+);
 
   /* *******
    * Methods
@@ -148,6 +292,8 @@ class GV_Blocks {
       $def[ 'block_collection' ] = $this->gv_blocks_collections[ 'default' ][ 'namespace' ];
       // Get the namespace based on the post_type
       $def[ 'namespace' ] = $this->gv_blocks_namespace[ $def[ 'post_type' ] ];
+      // Until the multiple collection thing is figured out, add "Bus - " or "VolOpp - " to each title
+      $def[ 'field_title' ] = sprintf( '%s - %s', 'business' === $def[ 'post_type' ] ? 'Bus' : 'VolOpp', $def[ 'field_title' ] );
 
       // If block_class is defined, use that block
       if ( ! empty( $def[ 'block_class' ] ) ) {
