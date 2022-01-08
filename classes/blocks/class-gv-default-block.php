@@ -50,7 +50,10 @@ class GV_Default_Block {
     // gv_debug( sprintf( 'Registering the %s block into the %s collection', $this->field_name, $this->block_collection ) );
     $block = array(
       'namespace' => $this->namespace,
-      'name' => $this->field_name,
+      // There's a problem when both business and vol_opportunity have the same field name (ex: short_location)
+      // Add the post_type to the field_name for the 'name' of the block
+      // 'name' => $this->field_name,
+      'name' => sprintf( '%s_%s', $this->post_type, $this->field_name ),
       'title' => __( $this->field_title ),
       'description' => __( $this->field_description ),
       'category' => $this->block_collection,
