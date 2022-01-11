@@ -30,6 +30,24 @@ class GV_Taxonomy_Block extends GV_Default_Block {
       // Get the terms associated with this post/taxonomy
       $post_terms = get_the_terms( $post->ID, $this->field_name );
 
+      // Filter the terms list to only include the youngest child of each hierarchy
+      $filtered_terms = array_filter(
+        $post_terms,
+        function ( $parent_term ) use ( $post_terms ) {
+          // Determine if this term is the parent of another term in the list
+          $is_not_a_parent = array_reduce(
+            $post_terms,
+            function ( $result, $child_term ) use ( $parent_term ) {
+              // If any other term in the list has this term as a parent, the final result is FALSE
+              return $result && ( $parent_term->term_id !== $child_term->parent );
+            },
+            TRUE
+          );
+
+          return $is_not_a_parent;
+        }
+      );
+
       // Use array map to display the term hierarchy
       $hierarchical_terms = array_map(
         function ( $term ) use ( $hierarchy_separator ) {
@@ -44,9 +62,9 @@ class GV_Taxonomy_Block extends GV_Default_Block {
           return preg_replace( '/' . $hierarchy_separator . '$/', '', $hierarchy_string );
 
         },
-        $post_terms
+        // Using the filtered_terms
+        $filtered_terms
       );
-      // TODO: Need to prune the term list so ancestors don't have their own entry
       return $before_terms . implode( $term_separator, $hierarchical_terms ) . $after_terms;
     }
 
