@@ -245,10 +245,20 @@ class GV_Blocks {
     ),
     array(
       'post_type' => 'vol_opportunity',
+      'field_name' => 'paired_business',
+      'field_title' => 'Paired Business',
+      'field_description' => 'Display the paired business of the volunteer opportunity',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Paired_Entry_Block',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
       'field_name' => 'volunteer_type',
       'field_title' => 'Volunteer Types',
       'field_description' => 'Display the volunteer types of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
     array(
@@ -257,6 +267,7 @@ class GV_Blocks {
       'field_title' => 'Volunteer Locations',
       'field_description' => 'Display the volunteer locations of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
     array(
@@ -265,6 +276,7 @@ class GV_Blocks {
       'field_title' => 'Volunteer Cost Label',
       'field_description' => 'Display the volunteer cost label of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
     array(
@@ -273,6 +285,7 @@ class GV_Blocks {
       'field_title' => 'Volunteer Duration',
       'field_description' => 'Display the volunteer duration of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Taxonomy_Block',
       'attributes' => array(),
     ),
 );
