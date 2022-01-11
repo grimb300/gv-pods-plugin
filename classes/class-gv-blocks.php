@@ -245,9 +245,9 @@ class GV_Blocks {
     ),
     array(
       'post_type' => 'vol_opportunity',
-      'field_name' => 'paired_business',
-      'field_title' => 'Paired Business',
-      'field_description' => 'Display the paired business of the volunteer opportunity',
+      'field_name' => 'paired_businesses',
+      'field_title' => 'Paired Businesses',
+      'field_description' => 'Display the paired businesses of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
       'block_class' => 'GV_Paired_Entry_Block',
       'attributes' => array(),

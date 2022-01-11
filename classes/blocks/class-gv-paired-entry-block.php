@@ -19,9 +19,16 @@ class GV_Paired_Entry_Block extends GV_Default_Block {
   protected function format_field_data( $field_data = null ) {
     $this_type = 'business' === $this->post_type ? 'Business' : 'Volunteer Opportunity';
     $other_type = 'business' === $this->post_type ? 'Volunteer Opportunity' : 'Business';
-    if ( FALSE === $field_data ) {
-      return sprintf( '<p><em>This %s doesn\'t have a paired %s</em></p>', $this_type, $other_type );
+    if ( FALSE === $field_data || empty( $field_data ) || ! is_array( $field_data ) ) {
+      // Return an empty string for now
+      return '';
     }
-    return sprintf( '<p style="color: red"><strong><em>don\'t know how to display a paired %s yet.</em></strong></p>', $other_type );
+    $formatted_paired_entries = array_map(
+      function ( $entry ) {
+        return sprintf( '<a href="%s">%s</a>', $entry[ 'guid' ], $entry[ 'post_title' ] );
+      },
+      $field_data
+    );
+    return implode( ', ', $formatted_paired_entries );
   }
 }
