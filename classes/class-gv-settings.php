@@ -830,11 +830,6 @@ class GV_Settings {
       // gv_debug( 'Converted business_type IDs' );
       // gv_debug( $business_type_ids );
 
-      // Stringify the legacy_business_types field
-      $stringified_business_types = array_map( function ( $type ) {
-        return sprintf( '%s: %s', $type[ 'id' ], $type[ 'name' ] );
-      }, $business[ 'business_types' ] );
-
       // Sort the locations based on ancestry_depth
       // Have to make a copy of the array since usort sorts in place
       $sorted_locations = $business[ 'locations' ];
@@ -848,16 +843,6 @@ class GV_Settings {
       // Convert legacy locations into an array of business_location IDs
       $business_location_ids = array_map( array( $this, 'convert_legacy_business_locations' ), $sorted_locations );
 
-      // Stringify the legacy_locations field
-      $stringified_locations = array_map( function ( $location ) {
-        return sprintf( '%s: %s', $location[ 'id' ], $location[ 'name' ] );
-      }, $sorted_locations );
-
-      // Stringify the legacy_paired_opportunities field
-      $stringified_paired_opportunities = array_map( function ( $pair ) {
-        return sprintf( '%s: %s', $pair[ 'id' ], $pair[ 'name' ] );
-      }, $business[ 'paired_volunteer_opportunities' ] );
-
       // Check to see if this legacy ID has already been converted
       $post_id = $this->get_post_id_from_legacy_id( 'business', $business[ 'id' ] );
       if ( 0 === $post_id ) {
@@ -869,7 +854,7 @@ class GV_Settings {
         }
         // Business doesn't exist, insert
         $post_id = wp_insert_post( array(
-          'post_content' => $business[ 'description' ][ 'full' ][ 'html' ],
+          // 'post_content' => $business[ 'description' ][ 'full' ][ 'html' ],
           'post_title' => $business[ 'name' ],
           'post_status' => 'publish',
           'post_type' => 'business',
@@ -892,10 +877,6 @@ class GV_Settings {
             'phone_numbers' => $mod_phone_nums,
             'url' => $business[ 'url' ],
             'legacy_id' => $business[ 'id' ],
-            'legacy_business_types' => implode( ', ', $stringified_business_types ),
-            'legacy_locations' => implode( ' > ', $stringified_locations ),
-            'legacy_paired_volunteer_opportunity_id' => implode( ', ', $stringified_paired_opportunities ),
-            'legacy_slug' => $business[ 'slug' ],
           ),
           'tax_input' => array(
             'business_type' => $business_type_ids,
@@ -920,11 +901,6 @@ class GV_Settings {
       // gv_debug( 'Converted volunteer_type IDs' );
       // gv_debug( $volunteer_type_ids );
 
-      // Stringify the legacy_volunteer_types field
-      $stringified_volunteer_types = array_map( function ( $type ) {
-        return sprintf( '%s: %s', $type[ 'id' ], $type[ 'name' ] );
-      }, $vol_opp[ 'types' ] );
-
       // Sort the locations based on ancestry_depth
       // Have to make a copy of the array since usort sorts in place
       $sorted_locations = $vol_opp[ 'locations' ];
@@ -938,31 +914,14 @@ class GV_Settings {
       // Convert legacy locations into an array of volunteer_location IDs
       $volunteer_location_ids = array_map( array( $this, 'convert_legacy_volunteer_locations' ), $sorted_locations );
 
-      // Stringify the legacy_locations field
-      $stringified_locations = array_map( function ( $location ) {
-        return sprintf( '%s: %s', $location[ 'id' ], $location[ 'name' ] );
-      }, $sorted_locations );
-
       // Convert legacy durations into an array of volunteer_duration IDs
       $volunteer_duration_ids = array_map( array( $this, 'convert_legacy_volunteer_durations' ), $vol_opp[ 'durations' ] );
-
-      // Stringify the legacy_durations field
-      $stringified_durations = array_map( function( $duration ) {
-        return sprintf( '%s: %s', $duration[ 'id' ], $duration[ 'name' ] );
-      }, $vol_opp[ 'durations' ] );
 
       // Convert legacy cost labels into a volunteer_cost_label ID
       $volunteer_cost_label_ids = $this->convert_legacy_volunteer_cost_labels( $vol_opp[ 'cost_label' ] );
 
       // Stringify the legacy_cost_label field
       $cost_suggestion = $vol_opp[ 'cost_label' ][ 'cost_suggestion' ];
-      $label = 0 === $cost_suggestion ? "Free" : $vol_opp[ 'cost_label' ][ 'label' ];
-      $stringified_cost_label = sprintf( '%s: %s', $cost_suggestion, $label );
-
-      // Stringify the legacy_paired_businesses field
-      $stringified_paired_businesses = array_map( function ( $pair ) {
-        return sprintf( '%s: %s', $pair[ 'id' ], $pair[ 'name' ] );
-      }, $vol_opp[ 'paired_businesses' ] );
 
       // Check to see if this legacy ID has already been converted
       $post_id = $this->get_post_id_from_legacy_id( 'vol_opportunity', $vol_opp[ 'id' ] );
@@ -970,7 +929,7 @@ class GV_Settings {
       if ( 0 === $post_id ) {
         // Business doesn't exist, insert
         $post_id = wp_insert_post( array(
-          'post_content' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
+          // 'post_content' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
           'post_title' => $vol_opp[ 'name' ],
           'post_status' => 'publish',
           'post_type' => 'vol_opportunity',
@@ -991,14 +950,6 @@ class GV_Settings {
             'other_ways_to_help' => $vol_opp[ 'other_ways_to_help' ][ 'html' ],
             'contact_info' => $vol_opp[ 'contact_info' ],
             'legacy_id' => $vol_opp[ 'id' ],
-            'legacy_volunteer_types' => implode( ', ', $stringified_volunteer_types ),
-            'legacy_locations' => implode( ' > ', $stringified_locations ),
-            'legacy_durations' => implode( ', ', $stringified_durations ),
-            'legacy_cost_label' => $stringified_cost_label,
-            'legacy_paired_business_id' => implode( ', ', $stringified_paired_businesses ),
-            'legacy_image' => $vol_opp[ 'image' ][ 'image' ],
-            'legacy_image_id' => $vol_opp[ 'image_id' ],
-            'legacy_slug' => $vol_opp[ 'slug' ],
           ),
           'tax_input' => array(
             'volunteer_type' => $volunteer_type_ids,
