@@ -93,8 +93,8 @@ class GV_Default_Block {
       $display_field_data = sprintf( '<code>%s</code>', var_export( $field_data, true ) );
     } elseif ( FALSE === $display_field_data ) {
       $display_field_data = '<p style="color: red"><strong><em>field() returned FALSE</em></strong></p>';
-    } elseif ( '' === $display_field_data ) {
-      $display_field_data = '<p style="color: red"><strong><em>field() returned empty string</em></strong></p>';
+    // } elseif ( '' === $display_field_data ) {
+    //   $display_field_data = '<p style="color: red"><strong><em>field() returned empty string</em></strong></p>';
     }
     return sprintf( '%s<div class="%s">%s</div>', $field_heading, $class, $display_field_data );
   }
