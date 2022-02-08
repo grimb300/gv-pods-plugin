@@ -19,15 +19,14 @@ class GV_Blocks {
       'namespace' => 'gv-default-block-collection',
       'title' => 'GV Blocks',
     ),
-    // TODO: Waiting to hear back from the Pods devs about registering multiple collections
-    // 'business' => array(
-    //   'namespace' => 'gv-business-blocks-collection',
-    //   'title' => 'GV Business Blocks',
-    // ),
-    // 'vol_opportunity' => array(
-    //   'namespace' => 'gv-vol-opportunity-blocks-collection',
-    //   'title' => 'GV Volunteer Opportunity Blocks',
-    // ),
+    'business' => array(
+      'namespace' => 'gv-business-blocks-collection',
+      'title' => 'GV Business Blocks',
+    ),
+    'vol_opportunity' => array(
+      'namespace' => 'gv-vol-opportunity-blocks-collection',
+      'title' => 'GV Volunteer Opportunity Blocks',
+    ),
   );
 
   private $gv_blocks_classes = array(
@@ -35,6 +34,7 @@ class GV_Blocks {
     'GV_Phone_Numbers_Block' => 'class-gv-phone-numbers-block.php',
     'GV_Paired_Entry_Block' => 'class-gv-paired-entry-block.php',
     'GV_Taxonomy_Block' => 'class-gv-taxonomy-block.php',
+    'GV_Link_Block' => 'class-gv-link-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -102,6 +102,7 @@ class GV_Blocks {
       'field_title' => 'Website URL',
       'field_description' => 'Display the URL of the business website',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Link_Block',
       'attributes' => array(),
     ),
     array(
@@ -153,6 +154,7 @@ class GV_Blocks {
       'field_title' => 'Organization URL',
       'field_description' => 'Display the organization url of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Link_Block',
       'attributes' => array(),
     ),
     array(
@@ -161,6 +163,7 @@ class GV_Blocks {
       'field_title' => 'Volunteer URL',
       'field_description' => 'Display the volunteer url of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Link_Block',
       'attributes' => array(),
     ),
     array(
@@ -169,6 +172,7 @@ class GV_Blocks {
       'field_title' => 'Facebook URL',
       'field_description' => 'Display the Facebook url of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Link_Block',
       'attributes' => array(),
     ),
     array(
@@ -177,6 +181,7 @@ class GV_Blocks {
       'field_title' => 'Twitter Username',
       'field_description' => 'Display the Twitter username of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Link_Block',
       'attributes' => array(),
     ),
     array(
@@ -302,11 +307,12 @@ class GV_Blocks {
     // Instantiate the custom block objects
     foreach ( $this->gv_blocks_defs as $def ) {
       // Force each block into the default collection (for now)
-      $def[ 'block_collection' ] = $this->gv_blocks_collections[ 'default' ][ 'namespace' ];
+      // $def[ 'block_collection' ] = $this->gv_blocks_collections[ 'default' ][ 'namespace' ];
+      $def[ 'block_collection' ] = $this->gv_blocks_collections[ $def[ 'post_type' ] ][ 'namespace' ];
       // Get the namespace based on the post_type
       $def[ 'namespace' ] = $this->gv_blocks_namespace[ $def[ 'post_type' ] ];
       // Until the multiple collection thing is figured out, add "Bus - " or "VolOpp - " to each title
-      $def[ 'field_title' ] = sprintf( '%s - %s', 'business' === $def[ 'post_type' ] ? 'Bus' : 'VolOpp', $def[ 'field_title' ] );
+      // $def[ 'field_title' ] = sprintf( '%s - %s', 'business' === $def[ 'post_type' ] ? 'Bus' : 'VolOpp', $def[ 'field_title' ] );
 
       // If block_class is defined, use that block
       if ( ! empty( $def[ 'block_class' ] ) ) {

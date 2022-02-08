@@ -88,7 +88,7 @@ class GV_Default_Block {
     // Display the field
     $class = sprintf( 'gv_block-%s-%s', $this->post_type, $this->field_name );
     $field_heading = sprintf( '<h4>%s</h4>', $this->field_name );
-    $display_field_data = $this->format_field_data( $field_data );
+    $display_field_data = $this->format_field_data( $field_data, $attributes );
     if ( is_array( $display_field_data ) ) {
       $display_field_data = sprintf( '<code>%s</code>', var_export( $field_data, true ) );
     } elseif ( FALSE === $display_field_data ) {
