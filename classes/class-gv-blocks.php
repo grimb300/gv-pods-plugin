@@ -60,9 +60,10 @@ class GV_Blocks {
     array(
       'post_type' => 'business',
       'field_name' => 'short_location',
-      'field_title' => 'Short Location',
+      'field_title' => 'Business Short Location',
       'field_description' => 'Display the short location of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Simple_Text_Block',
       'attributes' => array(),
     ),
     array(
@@ -146,9 +147,10 @@ class GV_Blocks {
     array(
       'post_type' => 'vol_opportunity',
       'field_name' => 'short_location',
-      'field_title' => 'Short Location',
+      'field_title' => 'VolOpp Short Location',
       'field_description' => 'Display the short location of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Simple_Text_Block',
       'attributes' => array(),
     ),
     array(

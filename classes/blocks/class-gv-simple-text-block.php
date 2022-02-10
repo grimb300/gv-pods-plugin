@@ -99,6 +99,18 @@ class GV_Simple_Text_Block extends GV_Default_Block {
         'default' => 'default',
       ),
       array(
+        'name' => 'use_text_color',
+        'label' => 'Color',
+        'type' => 'boolean',
+        'boolean_yes_label' => 'Use custom color',
+        'boolean_no_label' => 'Use default color',
+      ),
+      array(
+        'name' => 'text_color',
+        'label' => 'Color',
+        'type' => 'color',
+      ),
+      array(
         'name' => 'text_align',
         'label' => 'Text Align',
         'type' => 'pick',
@@ -143,22 +155,27 @@ class GV_Simple_Text_Block extends GV_Default_Block {
       $styles[] = sprintf( 'font-size:%s', $attributes[ 'font_size' ][ 'value' ] );
     }
     if ( ! empty( $attributes[ 'font_appearance' ] ) &&  'default' !== $attributes[ 'font_appearance' ][ 'value' ] ) {
-      gv_debug( sprintf( 'Font appearance is %s', $attributes[ 'font_appearance' ][ 'value' ] ) );
+      // gv_debug( sprintf( 'Font appearance is %s', $attributes[ 'font_appearance' ][ 'value' ] ) );
       $font_appearance = explode( '-', $attributes[ 'font_appearance' ][ 'value' ] );
-      gv_debug( sprintf( 'Font appearance after explosion is' ) );
-      gv_debug( $font_appearance );
+      // gv_debug( sprintf( 'Font appearance after explosion is' ) );
+      // gv_debug( $font_appearance );
       $styles[] = sprintf( 'font-weight:%s', $font_appearance[ 0 ] );
       if ( 2 === count( $font_appearance ) ) {
         $styles[] = sprintf( 'font-style:%s', $font_appearance[ 1 ] );
       }
-      gv_debug( 'Styles is now ' );
-      gv_debug( $styles );
+      // gv_debug( 'Styles is now ' );
+      // gv_debug( $styles );
     }
     if ( ! empty( $attributes[ 'text_align' ] && 'left' !== $attributes[ 'text_align' ][ 'value' ] ) ) {
       $styles[] = sprintf( 'text-align:%s', $attributes[ 'text_align' ][ 'value' ] );
     }
     if ( ! empty( $attributes[ 'font_case' ] ) && ( 'capitalize' !== $attributes[ 'font_case' ][ 'value' ] )) {
       $styles[] = sprintf( 'text-transform:%s', $attributes[ 'font_case' ][ 'value' ] );
+    }
+    if ( ! empty( $attributes[ 'use_text_color' ] ) && $attributes[ 'use_text_color' ] ) {
+      // gv_debug( 'use_text_color' );
+      // gv_debug( $attributes[ 'use_text_color' ] );
+      $styles[] = sprintf( 'color:%s', $attributes[ 'text_color' ] );
     }
     $formatted_field_data = sprintf(
       '<%s%s>%s</%s>',
