@@ -103,4 +103,146 @@ class GV_Default_Block {
   protected function format_field_data( $field_data = null ) {
     return $field_data;
   }
+
+  // This function generates an array of general text style fields used by pods_register_block_type()
+  // Takes an optional prefix and label so multiple sets of attributes can be added to the same block type
+  protected function generate_text_style_fields( $p=null, $l=null ) {
+    $prefix = is_null( $p ) ? 'noprefix-' : $p . '-';
+    $label = is_null( $l ) ? '' : $l . ' ';
+    return array(
+      // TODO: Figure out how to extract the included fonts. This is likely theme dependent.
+      array(
+        'name' => $prefix . 'font_family',
+        'label' => $label . 'Font',
+        'type' => 'pick',
+        'data' => array( 'default' => 'Default' ),
+        'default' => 'default',
+        'description' => 'Future feature',
+      ),
+      // TODO: Is it better to make this a text field and let the user decide?
+      array(
+        'name' => $prefix . 'font_size',
+        'label' => $label . 'Size',
+        'type' => 'pick',
+        'data' => array(
+          'default' => 'Default',
+          '16px' => 'Extra Small (16px)',
+          '18px' => 'Small (18px)',
+          '20px' => 'Normal (20px)',
+          '24px' => 'Large (24px)',
+          '40px' => 'Extra Large (40px)',
+          '96px' => 'Huge (96px)',
+          '144px' => 'Gigantic (144px)',
+        ),
+        'default' => 'default',
+      ),
+      array(
+        'name' => $prefix . 'font_appearance',
+        'label' => $label . 'Appearance',
+        'type' => 'pick',
+        'data' => array(
+          'default' => 'Default',
+          '100' => 'Thin',
+          '200' => 'Extra Light',
+          '300' => 'Light',
+          '400' => 'Regular',
+          '500' => 'Medium',
+          '600' => 'Semi Bold',
+          '700' => 'Bold',
+          '800' => 'Black',
+          '100-italic' => 'Thin Italic',
+          '200-italic' => 'Extra Light Italic',
+          '300-italic' => 'Light Italic',
+          '400-italic' => 'Regular Italic',
+          '500-italic' => 'Medium Italic',
+          '600-italic' => 'Semi Bold Italic',
+          '700-italic' => 'Bold Italic',
+          '800-italic' => 'Black Italic',
+        ),
+        'default' => 'default',
+      ),
+      array(
+        'name' => $prefix . 'use_text_color',
+        'label' => $label . 'Color',
+        'type' => 'boolean',
+        'boolean_yes_label' => 'Use custom color',
+        'boolean_no_label' => 'Use default color',
+      ),
+      array(
+        'name' => $prefix . 'text_color',
+        'label' => $label . 'Color',
+        'type' => 'color',
+      ),
+      array(
+        'name' => $prefix . 'text_align',
+        'label' => $label . 'Text Align',
+        'type' => 'pick',
+        'data' => array(
+          'left' => 'Left',
+          'center' => 'Center',
+          'right' => 'Right',
+        ),
+        'default' => 'left',
+      ),
+      array(
+        'name' => $prefix . 'font_case',
+        'label' => $label . 'Letter Case',
+        'type' => 'pick',
+        'data' => array(
+          'uppercase' => 'UPPER CASE',
+          'lowercase' => 'lower case',
+          'capitalize' => 'Capitalize',
+        ),
+        'default' => 'capitalize',
+      ),
+    );
+  }
+
+  // This function generates an array of styles to be used when generating the formatted field data
+  // Takes a required attribute array to extract from and an optional prefix so multiple sets of attributes can be added to the same block type
+  // Must use the same prefix defined in generate_text_style_fields( <prefix> )
+  protected function generate_text_style_attributes( $a, $p=null ) {
+    // Extract the attributes using the provided prefix
+    $prefix = is_null( $p ) ? 'noprefix-' : $p . '-';
+    // Get the keys that match this prefix
+    $matching_keys = array_filter(
+      array_keys( $a ),
+      function ( $k ) use ( $prefix ) {
+        return 1 === preg_match( "/^$prefix/", $k );
+      }
+    );
+    // gv_debug( 'Attributes matching prefix ' . $prefix );
+    // gv_debug( $matching_keys );
+    // Pull the data out of the attribute array and into non-prefixed variables
+    foreach ( $matching_keys as $k ) {
+      $varname = preg_replace( "/^$prefix/", '', $k );
+      $$varname = is_array( $a[ $k ] ) && isset( $a[ $k ][ 'value' ] ) ? $a[ $k ][ 'value' ] : $a[ $k ];
+      // gv_debug( sprintf( '$%s = %s', $varname, $$varname ) );
+    }
+     
+    $styles = array();
+    if ( isset( $font_size ) && 'default' !== $font_size ) {
+      $styles[] = sprintf( 'font-size:%s', $font_size );
+    }
+    if ( isset( $font_appearance ) && 'default' !== $font_appearance ) {
+      // The appearance attribute contains the font-weight and optionally the font-style
+      $font_weight = $font_appearance;
+      if ( preg_match( "/^[1-8]00-[a-z]+$/", $font_appearance ) ) {
+        [ $font_weight, $font_style ] = explode( '-', $font_appearance );
+        $styles[] = sprintf( 'font-style:%s', $font_style );
+      }
+      $styles[] = sprintf( 'font-weight:%s', $font_weight );
+    }
+    if ( isset( $text_align ) && 'left' !== $text_align ) {
+      $styles[] = sprintf( 'text-align:%s', $text_align );
+    }
+    if ( isset( $font_case ) && 'capitalize' !== $font_case ) {
+      $styles[] = sprintf( 'text-transform:%s', $font_case );
+    }
+    if ( isset( $use_text_color ) && true === $use_text_color ) {
+      $styles[] = sprintf( 'color:%s', $text_color );
+    }
+
+    return $styles;
+  }
 }
