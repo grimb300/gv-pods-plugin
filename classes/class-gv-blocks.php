@@ -35,6 +35,7 @@ class GV_Blocks {
     'GV_Paired_Entry_Block' => 'class-gv-paired-entry-block.php',
     'GV_Taxonomy_Block' => 'class-gv-taxonomy-block.php',
     'GV_Link_Block' => 'class-gv-link-block.php',
+    'GV_Simple_Text_Block' => 'class-gv-simple-text-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -44,6 +45,7 @@ class GV_Blocks {
       'field_title' => 'Business Name',
       'field_description' => 'Display the name of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Simple_Text_Block',
       'attributes' => array(),
     ),
     array(
@@ -138,6 +140,7 @@ class GV_Blocks {
       'field_title' => 'Volunteer Name',
       'field_description' => 'Display the name of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Simple_Text_Block',
       'attributes' => array(),
     ),
     array(
