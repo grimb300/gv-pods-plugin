@@ -32,11 +32,17 @@ class GV_Link_Block extends GV_Default_Block {
       ),
       array(
         'name' => 'new_window',
-        'label' => 'Open Link in New Window',
+        // 'label' => 'Open Link in New Window',
         'type' => 'boolean',
+        'boolean_yes_label' => 'Open link in new tab'
       ),
     );
-    $this->attributes = array_merge( $this->attributes, $link_block_attributes );
+    $this->attributes = array_merge(
+      $this->attributes,
+      $link_block_attributes,
+      $this->generate_text_style_fields()
+    );
+
   }
 
   // Display the field
@@ -51,7 +57,9 @@ class GV_Link_Block extends GV_Default_Block {
     $target = ! empty( $attributes[ 'new_window' ] ) && $attributes[ 'new_window' ] ? ' target="_blank"' : '';
 
     // Create the link, if no link text provided use the field data
-    $formatted_field_data = sprintf( '<a href="%s"%s>%s</a>', $url, $target, $link_text );
+    $link_styles = $this->generate_text_style_attributes( $attributes );
+    $style_attribute = empty( $link_styles ) ? '' : sprintf( ' style="%s"', implode( ';', $link_styles ) );
+    $formatted_field_data = sprintf( '<div%s><a href="%s"%s>%s</a></div>', $style_attribute, $url, $target, $link_text );
 
     // Return the formatted field data
     return $formatted_field_data;
