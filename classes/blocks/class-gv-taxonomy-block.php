@@ -61,23 +61,32 @@ class GV_Taxonomy_Block extends GV_Default_Block {
   // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
+    
+    // Create the style element if necessary
+    $style_element = '';
+    $term_class = sprintf( 'gv_%s_term', $this->field_name );
+    $term_styles = $this->generate_text_style_attributes( $attributes );
+    if ( ! empty( $term_styles ) ) {
+      $style_element = sprintf( '<style>.%s{%s;}</style>', $term_class, implode( ';', $term_styles ) );
+    }
 
     // TODO: These should be turned into block attributes
     // Build the term and hierarchy separators based on the attributes
     $display_style = isset( $attributes[ 'display_style' ][ 'value' ] ) ? $attributes[ 'display_style' ][ 'value' ] : '';
     $term_separator = isset( $attributes[ 'term_separator' ] ) ? $attributes[ 'term_separator' ] : ', ';
     $before_terms = (
-      'ul' === $display_style ? '<ul><li>' : (
-        'ol' === $display_style ? '<ol><li>' : (
-          in_array( $display_style, [ 'single', 'multi' ] ) ? '<p>' : '' ) ) );
+      'ul' === $display_style ? sprintf( '<ul><li class="%s">', $term_class ) : (
+        'ol' === $display_style ? sprintf( '<ol><li class="%s">', $term_class ) : (
+          in_array( $display_style, [ 'single', 'multi' ] ) ? sprintf( '<p class="%s">', $term_class ) : (
+            sprintf( '<span class="%s">', $term_class ) ) ) ) );
     $term_separator = (
-      in_array( $display_style, [ 'ul', 'ol' ] ) ? '</li><li>' : (
-        'multi' === $display_style ? '</p><p>' : (
+      in_array( $display_style, [ 'ul', 'ol' ] ) ? sprintf( '</li><li class="%s">', $term_class ) : (
+        'multi' === $display_style ? sprintf( '</p><p class="%s">', $term_class ) : (
           'single' ? $term_separator : '' ) ) );
     $after_terms = (
       'ul' === $display_style ? '</li></ol>' : (
         'ol' === $display_style ? '</li></ol>' : (
-          in_array( $display_style, [ 'single', 'multi' ] ) ? '</p>' : '' ) ) );
+          in_array( $display_style, [ 'single', 'multi' ] ) ? '</p>' : '</span>' ) ) );
     $hierarchy_separator = isset( $attributes[ 'hierarchy_separator' ] ) ? $attributes[ 'hierarchy_separator' ] : ' > ';
     
     // If this is a hierarchical taxonomy, build the links using get_term_parents_list()
@@ -120,11 +129,11 @@ class GV_Taxonomy_Block extends GV_Default_Block {
         // Using the filtered_terms
         $filtered_terms
       );
-      return $before_terms . implode( $term_separator, $hierarchical_terms ) . $after_terms;
+      return $style_element . $before_terms . implode( $term_separator, $hierarchical_terms ) . $after_terms;
     }
 
     // Else, take the easy way out and use get_the_term_list()
-    return get_the_term_list( $post->ID, $this->field_name, $before_terms, $term_separator, $after_terms );
+    return $style_element . get_the_term_list( $post->ID, $this->field_name, $before_terms, $term_separator, $after_terms );
   }
 }
 
