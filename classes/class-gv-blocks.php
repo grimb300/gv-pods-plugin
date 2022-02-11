@@ -36,6 +36,7 @@ class GV_Blocks {
     'GV_Taxonomy_Block' => 'class-gv-taxonomy-block.php',
     'GV_Link_Block' => 'class-gv-link-block.php',
     'GV_Simple_Text_Block' => 'class-gv-simple-text-block.php',
+    'GV_Textarea_Block' => 'class-gv-textarea-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -72,6 +73,7 @@ class GV_Blocks {
       'field_title' => 'Address',
       'field_description' => 'Display the address of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -80,6 +82,7 @@ class GV_Blocks {
       'field_title' => 'Description',
       'field_description' => 'Display the description of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -88,6 +91,7 @@ class GV_Blocks {
       'field_title' => 'Hours',
       'field_description' => 'Display the hours of the business',
       'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -211,6 +215,7 @@ class GV_Blocks {
       'field_title' => 'Duration Notes',
       'field_description' => 'Display the duration notes of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -219,6 +224,7 @@ class GV_Blocks {
       'field_title' => 'Description',
       'field_description' => 'Display the description of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -235,6 +241,7 @@ class GV_Blocks {
       'field_title' => 'Fees Notes',
       'field_description' => 'Display the fees notes of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -243,6 +250,7 @@ class GV_Blocks {
       'field_title' => 'Other Ways to Help',
       'field_description' => 'Display the other ways to help of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
@@ -251,6 +259,7 @@ class GV_Blocks {
       'field_title' => 'Contact Info',
       'field_description' => 'Display the contact info of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Textarea_Block',
       'attributes' => array(),
     ),
     array(
