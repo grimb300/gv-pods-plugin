@@ -100,7 +100,7 @@ class GV_Default_Block {
   }
 
   // This function should be overridden by child classes
-  protected function format_field_data( $field_data = null ) {
+  protected function format_field_data( $field_data = null, $attributes = array() ) {
     return $field_data;
   }
 

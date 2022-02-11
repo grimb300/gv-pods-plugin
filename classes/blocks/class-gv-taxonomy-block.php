@@ -18,8 +18,8 @@ class GV_Taxonomy_Block extends GV_Default_Block {
    * Methods
    * *******/
 
-  // Display a location field
-  protected function format_field_data( $field_data = null ) {
+  // Display the field
+  protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
 
     // TODO: These should be turned into block attributes

@@ -18,8 +18,8 @@ class GV_Location_Block extends GV_Default_Block {
    * Methods
    * *******/
 
-  // Display a location field
-  protected function format_field_data( $field_data = null ) {
+  // Display the field
+  protected function format_field_data( $field_data = null, $attributes = array() ) {
     return '<p style="color: red"><strong><em>don\'t know how to display a location field yet.</em></strong></p>';
   }
 }

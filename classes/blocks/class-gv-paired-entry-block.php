@@ -18,8 +18,8 @@ class GV_Paired_Entry_Block extends GV_Default_Block {
    * Methods
    * *******/
 
-  // Display a location field
-  protected function format_field_data( $field_data = null ) {
+  // Display the field
+  protected function format_field_data( $field_data = null, $attributes = array() ) {
     $this_type = 'business' === $this->post_type ? 'Business' : 'Volunteer Opportunity';
     $other_type = 'business' === $this->post_type ? 'Volunteer Opportunity' : 'Business';
     if ( FALSE === $field_data || empty( $field_data ) || ! is_array( $field_data ) ) {

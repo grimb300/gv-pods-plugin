@@ -39,7 +39,7 @@ class GV_Link_Block extends GV_Default_Block {
     $this->attributes = array_merge( $this->attributes, $link_block_attributes );
   }
 
-  // Display a link field
+  // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
 

@@ -55,7 +55,7 @@ class GV_Simple_Text_Block extends GV_Default_Block {
     );
   }
 
-  // Display a link field
+  // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
 
