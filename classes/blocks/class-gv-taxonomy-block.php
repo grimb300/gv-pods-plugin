@@ -18,15 +18,67 @@ class GV_Taxonomy_Block extends GV_Default_Block {
    * Methods
    * *******/
 
+  // Customized constructor
+  public function __construct( $params = array() ) {
+    parent::__construct( $params );
+
+    // Fields specific to taxonomies
+    $taxonomy_fields = array(
+      array(
+        'name' => 'display_style',
+        'label' => 'Display Style',
+        'type' => 'pick',
+        'data' => array(
+          'ul' => 'Unordered List',
+          'ol' => 'Ordered List',
+          'single' => 'Single Line',
+          'multi' => 'Multi-Line',
+        ),
+        'default' => 'ul',
+      ),
+      array(
+        'name' => 'term_separator',
+        'label' => 'Term Separator (for Single Line Display Style)',
+        'type' => 'text',
+        'default' => ', ',
+      ),
+      array(
+        'name' => 'hierarchy_separator',
+        'label' => 'Hierarchy Separator',
+        'type' => 'text',
+        'default' => ' > ',
+      ),
+    );
+
+    // Give two sets of text styles, one for the phone number an another for the description
+    $this->attributes = array_merge(
+      $this->attributes,
+      $taxonomy_fields,
+      $this->generate_text_style_fields()
+    );
+  }
+
   // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
 
     // TODO: These should be turned into block attributes
-    $before_terms = '<ul><li>';
-    $term_separator = '</li><li>';
-    $after_terms = '</li></ul>';
-    $hierarchy_separator = ' > ';
+    // Build the term and hierarchy separators based on the attributes
+    $display_style = isset( $attributes[ 'display_style' ][ 'value' ] ) ? $attributes[ 'display_style' ][ 'value' ] : '';
+    $term_separator = isset( $attributes[ 'term_separator' ] ) ? $attributes[ 'term_separator' ] : ', ';
+    $before_terms = (
+      'ul' === $display_style ? '<ul><li>' : (
+        'ol' === $display_style ? '<ol><li>' : (
+          in_array( $display_style, [ 'single', 'multi' ] ) ? '<p>' : '' ) ) );
+    $term_separator = (
+      in_array( $display_style, [ 'ul', 'ol' ] ) ? '</li><li>' : (
+        'multi' === $display_style ? '</p><p>' : (
+          'single' ? $term_separator : '' ) ) );
+    $after_terms = (
+      'ul' === $display_style ? '</li></ol>' : (
+        'ol' === $display_style ? '</li></ol>' : (
+          in_array( $display_style, [ 'single', 'multi' ] ) ? '</p>' : '' ) ) );
+    $hierarchy_separator = isset( $attributes[ 'hierarchy_separator' ] ) ? $attributes[ 'hierarchy_separator' ] : ' > ';
     
     // If this is a hierarchical taxonomy, build the links using get_term_parents_list()
     if ( is_taxonomy_hierarchical( $this->field_name ) ) {
