@@ -26,6 +26,10 @@ class GV_Textarea_Block extends GV_Default_Block {
     parent::__construct( $params );
 
     // Elements potentially created by a textarea
+    // TODO: There is a lot of options here AND
+    //       it looks like the TinyMCE can also add <blockquote>, <code>, <ul>, <ol>, <a>, ...
+    //       Unless I can figure out how to group fields together an hide the group, this feels like too much.
+    //       Not sure how to handle this right now.
     $this->textarea_elements = array(
       'h1'=> 'Heading 1',
       'h2'=> 'Heading 2',
