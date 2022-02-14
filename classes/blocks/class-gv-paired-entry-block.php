@@ -18,6 +18,18 @@ class GV_Paired_Entry_Block extends GV_Default_Block {
    * Methods
    * *******/
 
+  // Customized constructor
+  public function __construct( $params = array() ) {
+    parent::__construct( $params );
+
+    // Add attribute fields specific to a link block
+    $this->attributes = array_merge(
+      $this->attributes,
+      $this->generate_text_style_fields()
+    );
+
+  }
+
   // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     $this_type = 'business' === $this->post_type ? 'Business' : 'Volunteer Opportunity';
@@ -26,12 +38,16 @@ class GV_Paired_Entry_Block extends GV_Default_Block {
       // Return an empty string for now
       return '';
     }
+    // Create the link, if no link text provided use the field data
+    // TODO: The color attribute doesn't seem to work. I may need to use a <style> element instead
+    $styles = $this->generate_text_style_attributes( $attributes );
+    $style_attribute = empty( $styles ) ? '' : sprintf( ' style="%s"', implode( ';', $styles ) );
     $formatted_paired_entries = array_map(
-      function ( $entry ) {
-        return sprintf( '<a href="%s">%s</a>', $entry[ 'guid' ], $entry[ 'post_title' ] );
+      function ( $entry ) use ( $style_attribute ) {
+        return sprintf( '<div%s><a href="%s">%s</a></div>', $style_attribute, $entry[ 'guid' ], $entry[ 'post_title' ] );
       },
       $field_data
     );
-    return implode( ', ', $formatted_paired_entries );
+    return implode( ' ', $formatted_paired_entries );
   }
 }
