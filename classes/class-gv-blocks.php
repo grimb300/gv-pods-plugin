@@ -424,8 +424,8 @@ class GV_Blocks {
   public function business_name_render( array $attr ) {
     // Get the business_name field
     global $post;
-    gv_debug( 'Current post' );
-    gv_debug( $post );
+    // gv_debug( 'Current post' );
+    // gv_debug( $post );
     $business_pod = pods( 'business', $post->ID );
     $business_name = $business_pod->exists() ? $business_pod->field( 'business_name', true ) : 'Invalid business pod';
     $render_string = array( $business_name );

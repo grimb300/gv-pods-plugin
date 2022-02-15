@@ -29,8 +29,8 @@ class GV_Location_Block extends GV_Default_Block {
     // wp_enqueue_script( 'pods-maps' );
     // wp_enqueue_style( 'pods-maps' );
 
-    gv_debug( 'map field data' );
-    gv_debug( $field_data );
+    // gv_debug( 'map field data' );
+    // gv_debug( $field_data );
 
     // TODO: This is a quick and dirty way to display the current business on a map.
     //       Eventually upgrade this to have markers for other businesses and parameterize it better.
