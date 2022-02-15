@@ -64,20 +64,34 @@ class GV_Settings {
         <table class="form-table">
           <tr valign="top">
             <th scope="row">
-              <label for="gv_settings[text]"><?php _e( 'GV Test Option'); ?></label>
+              <label for="gv_settings[google_maps_js_api_key]"><?php _e( 'Google Maps JavaScript API Key'); ?></label>
             </th>
             <td>
-              <input class="regular-text" type="text" id="gv_settings[text]" style="width:300px;"  name="gv_settings[label]" value="<?php if( isset( $options['label'] ) ) { echo esc_attr( $options['label'] ); } ?>">
-  						<p class="description"><?php _e( 'Enter some text for the label here.' ); ?></p>
+              <input
+                class="regular-text"
+                type="text"
+                id="gv_settings[google_maps_js_api_key]"
+                style="width:500px;"
+                name="gv_settings[google_maps_js_api_key]"
+                value="<?php if( isset( $options['google_maps_js_api_key'] ) ) { echo $options['google_maps_js_api_key']; } ?>"
+              >
+  						<p class="description"><?php _e( 'JavaScript API keys should be restricted by referrer.' ); ?></p>
             </td>
           </tr>
           <tr valign="top">
             <th scope="row">
-						  <span><?php _e( 'Enable Feature' ); ?></span>
+              <label for="gv_settings[google_maps_http_api_key]"><?php _e( 'Google Maps HTTP API Key'); ?></label>
             </th>
             <td>
-              <input class="checkbox" type="checkbox" id="gv_settings[enabled]" name="gv_settings[enabled]" value="1" <?php checked( 1, isset( $options['enabled'] ) ); ?>/>
-						  <label for="gv_settings[enabled]"><?php _e( 'Enable some feature in this plugin?' ); ?></label>
+              <input
+                class="regular-text"
+                type="text"
+                id="gv_settings[google_maps_js_http_key]"
+                style="width:500px;"
+                name="gv_settings[google_maps_js_http_key]"
+                value="<?php if( isset( $options['google_maps_js_http_key'] ) ) { echo $options['google_maps_js_http_key']; } ?>"
+              >
+  						<p class="description"><?php _e( 'JavaScript API keys should be restricted by the server ip address.' ); ?></p>
 					  </td>
           </tr>
         </table>

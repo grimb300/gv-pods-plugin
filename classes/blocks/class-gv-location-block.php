@@ -35,6 +35,10 @@ class GV_Location_Block extends GV_Default_Block {
     // TODO: This is a quick and dirty way to display the current business on a map.
     //       Eventually upgrade this to have markers for other businesses and parameterize it better.
     //       Someday it might even use the pods map type. :)
+    $lat = $field_data['geo']['lat'];
+    $lng = $field_data['geo']['lng'];
+    $gv_settings = get_option( 'gv_settings' );
+    $api_key = $gv_settings[ 'google_maps_js_api_key' ];
     $field_data = '
     <style>
     /* Set the size of the div element that contains the map */
@@ -47,7 +51,7 @@ class GV_Location_Block extends GV_Default_Block {
     // Initialize and add teh map
     function initMap() {
       // The location of the business
-      const business = { lat: ' . $field_data['geo']['lat'] . ', lng: ' . $field_data['geo']['lng'] . ' };
+      const business = { lat: ' . $lat . ', lng: ' . $lng . ' };
       // The map, centered at Uluru
       const map = new google.maps.Map(document.getElementById("map"), {
         zoom: 12,
@@ -62,7 +66,7 @@ class GV_Location_Block extends GV_Default_Block {
     </script>
     <div id="map"></div>
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBXmME5HmoMq1K85S2Z7kVksAuPInsrHhM&callback=initMap&libraries=&v=weekly"
+      src="https://maps.googleapis.com/maps/api/js?key=' . $api_key . '&callback=initMap&libraries=&v=weekly"
       async
     ></script>
     ';
