@@ -891,6 +891,7 @@ class GV_Settings {
             'phone_numbers' => $mod_phone_nums,
             'url' => $business[ 'url' ],
             'legacy_id' => $business[ 'id' ],
+            'internal_slug' => $business[ 'slug' ],
           ),
           'tax_input' => array(
             'business_type' => $business_type_ids,
@@ -964,6 +965,7 @@ class GV_Settings {
             'other_ways_to_help' => $vol_opp[ 'other_ways_to_help' ][ 'html' ],
             'contact_info' => $vol_opp[ 'contact_info' ],
             'legacy_id' => $vol_opp[ 'id' ],
+            'internal_slug' => $vol_opp[ 'slug' ],
           ),
           'tax_input' => array(
             'volunteer_type' => $volunteer_type_ids,

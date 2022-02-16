@@ -13,6 +13,7 @@ class GV_Plugin {
   public $gv_settings;
   public $gv_edit_screen;
   public $gv_blocks;
+  public $gv_save_posts;
 
   /* *******
    * Methods
@@ -48,11 +49,17 @@ class GV_Plugin {
     // require_once GV_PLUGIN_PATH . 'examples/pods-custom-blocks.php';
 
     // Register the GV Phone Numbers field type
+    // TODO: Should this be in a different file?
     add_action( 'plugins_loaded', array( $this, 'gv_phone_numbers_field_init'), 20 );
 
+    // Load the custom save functions
+    require_once GV_PLUGIN_PATH . 'classes/class-gv-save-posts.php';
+    $this->gv_save_posts = new GV_Save_Posts();
+    
   }
-
+  
   public function gv_phone_numbers_field_init() {
+    // TODO: Should this be in a different file?
     // Return if Pods not active
     // TODO: This check should be done earlier, I think
     if ( ! function_exists( 'pods' ) || ! function_exists( 'pods_register_field_type' ) | ! defined( 'PODS_DIR' ) ) {
@@ -65,6 +72,7 @@ class GV_Plugin {
   }
 
   public function gv_phone_numbers_field_add_field_type( $types ) {
+    // TODO: Should this be in a different file?
     $types[] = 'gv_phone_numbers';
     return $types;
   }
