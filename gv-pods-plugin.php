@@ -24,7 +24,9 @@
 
 define( 'GV_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GV_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
+// Durations, admittedly not the right place to do this
+define( 'GV_VOLUNTEER_DURATION_MIN', 0 );
+define( 'GV_VOLUNTEER_DURATION_MAX', 0x3fffffff ); // 1073741823, max from the Rails days
 function gv_debug( $msg ) {
   if ( is_array( $msg ) || is_object( $msg ) || is_bool( $msg ) ) {
     $msg = var_export( $msg, true );

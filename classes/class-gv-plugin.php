@@ -48,9 +48,11 @@ class GV_Plugin {
     // Example from the Pods docs (testing ordering)
     // require_once GV_PLUGIN_PATH . 'examples/pods-custom-blocks.php';
 
-    // Register the GV Phone Numbers field type
+    // Register the GV custom field types
     // TODO: Should this be in a different file?
+    // TODO: Figure out the duration field
     add_action( 'plugins_loaded', array( $this, 'gv_phone_numbers_field_init'), 20 );
+    // add_action( 'plugins_loaded', array( $this, 'gv_duration_field_init'), 20 );
 
     // Load the custom save functions
     require_once GV_PLUGIN_PATH . 'classes/class-gv-save-posts.php';
@@ -74,6 +76,25 @@ class GV_Plugin {
   public function gv_phone_numbers_field_add_field_type( $types ) {
     // TODO: Should this be in a different file?
     $types[] = 'gv_phone_numbers';
+    return $types;
+  }
+
+  public function gv_duration_field_init() {
+    // TODO: Should this be in a different file?
+    // Return if Pods not active
+    // TODO: This check should be done earlier, I think
+    if ( ! function_exists( 'pods' ) || ! function_exists( 'pods_register_field_type' ) | ! defined( 'PODS_DIR' ) ) {
+      return;
+    }
+
+    add_filter( 'pods_api_field_types', array( $this, 'gv_duration_field_add_field_type' ) );
+
+    pods_register_field_type( 'gv_duration', GV_PLUGIN_PATH . 'classes/fields/gv-duration.php' );
+  }
+
+  public function gv_duration_field_add_field_type( $types ) {
+    // TODO: Should this be in a different file?
+    $types[] = 'gv_duration';
     return $types;
   }
 
