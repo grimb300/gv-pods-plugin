@@ -23,7 +23,6 @@ class PodsField_GV_Duration extends PodsField {
         'label' => __( 'Duration Default Open Ended', 'pods' ),
         'type' => 'boolean',
         'boolean_yes_label' => __( 'Duration is Open Ended', 'pods' ),
-
       ),
     );
 
