@@ -5,6 +5,7 @@ namespace GVPlugin;
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 // Using the pods-address-field plugin as an example
+gv_debug( 'class-gv-duration-field.php is loaded' );
 
 class GV_Duration_Field extends PodsField {
 

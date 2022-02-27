@@ -6,21 +6,64 @@ class PodsField_GV_Duration extends PodsField {
   public static $prepare = '%s';
   public static $file_path = '';
 
+  // Some common values
+  public static $duration_min = "0";
+  public static $duration_max = "1073741823"; // max from the Rails days
+  public static $duration_units = array(
+    'days' => 'days',
+    'weeks' => 'weeks',
+    'months' => 'months',
+    'years' => 'years',
+  );
+
   public function __construct() {
     self::$label = __( 'GV Duration', 'pods' );
+
+    // TODO: Figure out how to update/get so a single number is saved to post_meta instead of [ number, unit, open_ended ]
+    // Update/Get post meta filters
+    // add_filter( 'pods_meta_update_post_meta', array( $this, 'gv_duration_update_post_meta' ), 10, 2 );
   }
+
+  // public function gv_duration_update_post_meta( $ret_val, $args ) {
+  //   GVPlugin\gv_debug( 'pods_meta_update_post_meta called with args' );
+  //   GVPlugin\gv_debug( $args );
+  // }
 
   public function options() {
 
     $options = array(
-      self::$type . '_default_value' => array(
-        'label' => __( 'Duration Default Value', 'pods' ),
-        'description' => __( sprintf( 'Default value range %s to %s', GV_VOLUNTEER_DURATION_MIN, GV_VOLUNTEER_DURATION_MAX ), 'pods' ),
-        'default' => 0,
+      self::$type . '_default_min_number' => array(
+        'label' => __( 'Minimum Duration Default Value', 'pods' ),
+        'description' => __( sprintf( 'Default value range %s to %s', self::$duration_min, self::$duration_max ), 'pods' ),
+        'number_min' => self::$duration_min,
+        'number_max' => self::$duration_max,
+        'number_html5' => "1", // required to get <input type="number">
+        'default' => self::$duration_min,
         'type' => 'number',
       ),
+      self::$type . '_default_min_unit' => array(
+        'label' => __( 'Minimum Duration Default Unit', 'pods' ),
+        'type' => 'pick',
+        'data' => self::$duration_units,
+        'default' => 'days',
+      ),
+      self::$type . '_default_max_number' => array(
+        'label' => __( 'Maximum Duration Default Value', 'pods' ),
+        'description' => __( sprintf( 'Default value range %s to %s', self::$duration_min, self::$duration_max ), 'pods' ),
+        'number_min' => self::$duration_min,
+        'number_max' => self::$duration_max,
+        'number_html5' => "1", // required to get <input type="number">
+        'default' => self::$duration_max,
+        'type' => 'number',
+      ),
+      self::$type . '_default_max_unit' => array(
+        'label' => __( 'Maximum Duration Default Unit', 'pods' ),
+        'type' => 'pick',
+        'data' => self::$duration_units,
+        'default' => 'days',
+      ),
       self::$type . '_default_open_ended' => array(
-        'label' => __( 'Duration Default Open Ended', 'pods' ),
+        // 'label' => __( 'Duration Default Open Ended', 'pods' ),
         'type' => 'boolean',
         'boolean_yes_label' => __( 'Duration is Open Ended', 'pods' ),
       ),
@@ -38,12 +81,24 @@ class PodsField_GV_Duration extends PodsField {
   // Point Pods to the custom input view for this field type
   public function input( $name, $value = null, $options = null, $pod = null, $id = null ) {
 
+    // GVPlugin\gv_debug( $name . ': gv_duration input called with options' );
+    foreach ( $options as $key => $value ) {
+      if ( preg_match( '/^' . self::$type . '/', $key ) ) {
+        // GVPlugin\gv_debug( '  ' . $key . ' => ' . $value );
+      }
+    }
+
     // This is a value that pods-address-field uses, not sure what it does yet
     $form_field_type = PodsForm::$field_type;
 
     // Get the defaults out of the options
-    $default_value = pods_v( self::$type . '_default_value', $options, '0' );
-    $default_open_ended = pods_v( self::$type . '_default_open_ended', $options, 'true' );
+    // If default is open ended, the max value should be the max and max unit should be days
+    $default_min_number = pods_v( self::$type . '_default_min_number', $options, self::$duration_min );
+    $default_min_unit = pods_v( self::$type . '_default_min_unit', $options, 'days' );
+    $default_open_ended = pods_v( self::$type . '_default_open_ended', $options, '0' );
+    $default_max_number = $default_open_ended ? self::$duration_max : pods_v( self::$type . '_default_max_number', $options, self::$duration_max );
+    $default_max_unit = $default_open_ended ? 'days' : pods_v( self::$type . '_default_max_unit', $options, 'days' );
+    // GVPlugin\gv_debug( $name . ': Default value: ' . $default_value . ', Default unit: ' . $default_unit . ", Default open_ended: " . $default_open_ended );
 
     $view = GV_PLUGIN_PATH . 'ui/fields/gv-duration.php';
     // TODO: pods-address-field example adds a filter here to allow other plugins to change the view

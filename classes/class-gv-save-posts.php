@@ -17,10 +17,35 @@ class GV_Save_Posts {
     add_action( 'set_object_terms', array( $this, 'gv_monitor_set_terms' ), 999, 6 );
     add_action( 'updated_post_meta', array( $this, 'gv_updated_cost_suggestion' ), 999, 4 );
     add_action( 'updated_post_meta', array( $this, 'gv_updated_durations' ), 999, 4 );
+    add_action( 'updated_term_meta', array( $this, 'gv_updated_durations' ), 999, 4 );
+  }
+
+  // Duplicating some definitions here only because I don't know for sure where to put it yet
+  private static $duration_max = "1073741823"; // max from the Rails days
+  private static $duration_week_in_days = 7;
+  private static $duration_month_in_days = 30;
+  private static $duration_year_in_days = 365;
+
+  private static function calculate_duration_in_days( $num, $unit ) {
+    if ( 'weeks' === $unit ) return $num * self::$duration_week_in_days;
+    if ( 'months' === $unit ) return $num * self::$duration_month_in_days;
+    if ( 'years' === $unit ) return $num * self::$duration_year_in_days;
+    return $num;
   }
 
   public function gv_updated_durations( $meta_id, $object_id, $meta_key, $meta_value ) {
-    // Return unless this is a min/max_duration update
+    // Return unless this is a duration update
+    if ( empty( $meta_value[ 'field_type' ] ) || 'gv_duration' !== $meta_value[ 'field_type' ] ) return;
+    gv_debug( 'Working on a gv_duration update' );
+    // Return if the min/max_in_days fields have already been calculated
+    if ( isset( $meta_value[ 'min_in_days' ] ) && $meta_value[ 'max_in_days' ] ) return;
+    gv_debug( 'Need to calculate min/max_in_days' );
+    // Calculate min/max_in_days
+    $min_in_days = self::calculate_duration_in_days( $meta_value[ 'min_number' ], $meta_value[ 'min_unit' ] );
+    $max_in_days = self::calculate_duration_in_days( $meta_value[ 'max_number' ], $meta_value[ 'max_unit' ] );
+    gv_debug( 'New range is ' . $min_in_days . ' to ' . $max_in_days . ' days' );
+    // If open_ended is set, 
+    return;
     if ( ! in_array( $meta_key, [ 'min_duration', 'max_duration' ] ) ) return;
     gv_debug( 'gv_updated_durations: Working on meta key ' . $meta_key );
 

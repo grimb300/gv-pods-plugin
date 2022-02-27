@@ -52,7 +52,7 @@ class GV_Plugin {
     // TODO: Should this be in a different file?
     // TODO: Figure out the duration field
     add_action( 'plugins_loaded', array( $this, 'gv_phone_numbers_field_init'), 20 );
-    // add_action( 'plugins_loaded', array( $this, 'gv_duration_field_init'), 20 );
+    add_action( 'plugins_loaded', array( $this, 'gv_duration_field_init'), 20 );
 
     // Load the custom save functions
     require_once GV_PLUGIN_PATH . 'classes/class-gv-save-posts.php';
