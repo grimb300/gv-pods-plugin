@@ -15,6 +15,15 @@ class PodsField_GV_Duration extends PodsField {
     'months' => 'months',
     'years' => 'years',
   );
+  public static $duration_week_in_days = 7;
+  public static $duration_month_in_days = 30;
+  public static $duration_year_in_days = 365;
+
+  public static function calculate_duration_in_days( $num, $unit ) {
+    if ( 'weeks' === $unit ) return $num * self::$duration_week_in_days;
+    if ( 'months' === $unit ) return $num * self::$duration_month_in_days;
+    if ( 'years' === $unit ) return $num * self::$duration_year_in_days;
+  }
 
   public function __construct() {
     self::$label = __( 'GV Duration', 'pods' );
