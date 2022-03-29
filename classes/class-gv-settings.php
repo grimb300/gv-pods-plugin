@@ -616,6 +616,7 @@ class GV_Settings {
       // }
       // continue;
 
+      // TODO: Need to check here if the image is already uploaded, instead of blindly uploading everything.
       // Upload the image file
       $upload = wp_upload_bits( $img_file, null, @file_get_contents( $img_path ) );
       if ( $upload[ 'error' ] ) {
