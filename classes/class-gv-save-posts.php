@@ -244,15 +244,17 @@ class GV_Save_Posts {
       update_post_meta( $post_id, 'internal_slug', $new_internal_slug );
     }
 
-    // TODO: Do I need to update this to handle vol_opps as well?????
+    // TODO: This works for vol_opps despite not removing/adding the action for that post type, consider removing entirely.
     // If a post update is needed...
     if ( $need_post_update ) {
       // ...to avoid an infinite loop, unhook this function...
-      remove_action( 'save_post_business', array( $this, 'gv_sync_name_field_to_post_title' ), 999 );
+      $hook = 'save_post_' . $post->post_type;
+      // gv_debug( 'Need to update the ' . $post->post_type . ' post, removing the ' . $hook . ' action' );
+      remove_action( $hook, array( $this, 'gv_sync_name_field_to_post_title' ), 999 );
       // ...update the post...
       wp_update_post( $postarr );
       // ...then re-hook this function
-      add_action( 'save_post_business', array( $this, 'gv_sync_name_field_to_post_title' ), 999, 3 );
+      add_action( $hook, array( $this, 'gv_sync_name_field_to_post_title' ), 999, 3 );
     }
   }
 
