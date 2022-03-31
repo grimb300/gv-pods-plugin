@@ -27,14 +27,26 @@ $max_phone_numbers = intval( $max_phone_numbers );
     display: flex;
     align-items: center;
     gap: 1em;
+    margin-bottom: 0.5em;
   }
   .gv_duration_fields_label {
     width: 20ch;
   }
-  .gv_duration_fields_open_ended label {
-    width: max-content;
+  .gv_duration_fields_unit {
+    width: 17ch;
   }
 </style>
+<script>
+  // If infinite unit is picked, disable the number input
+  // TODO: Check into making the query selectors more automatic
+  window.onload = function(){
+    const maxUnit = document.querySelector('#pods-form-ui-pods-meta-duration-max-unit');
+    const maxNumber = document.querySelector('#pods-form-ui-pods-meta-duration-max-number');
+    const disableMaxNumber = () => maxNumber.disabled = maxUnit.value === 'infinite';
+    maxUnit.onchange = disableMaxNumber;
+    disableMaxNumber();
+  }
+</script>
 <?php
 // Adding a hidden field to make it easier to handle on save
 echo PodsForm::field(
@@ -47,13 +59,16 @@ echo PodsForm::field(
   <div class="gv_duration_fields_label">Minimum Duration</div>
   <div class="gv_duration_fields_number">
     <?php
+    // GVPlugin\gv_debug( 'durations value' );
+    // GVPlugin\gv_debug( $value );
+    // GVPlugin\gv_debug( 'Using pods_v: ' . pods_v( 'min_number', $value ) );
     echo PodsForm::field(
       $name . '[min_number]',
       pods_v( 'min_number', $value ),
       'number',
       array(
-        'number_min' => PodsField_GV_Duration::$duration_min,
-        'number_max' => PodsField_GV_Duration::$duration_max,
+        'number_min' => GVPlugin\GV_Duration_Helper::$duration_min,
+        'number_max' => GVPlugin\GV_Duration_Helper::$duration_max,
         'number_html5' => "1", // required to get <input type="number">
         'default_value' => $default_min_number,
       )
@@ -67,7 +82,8 @@ echo PodsForm::field(
       pods_v( 'min_unit', $value ),
       'pick',
       array(
-        'data' => PodsField_GV_Duration::$duration_units,
+        // Filter out the infinite unit for the min duration
+        'data' => array_filter( GVPlugin\GV_Duration_Helper::$duration_units, function( $unit ) { return 'infinite' !== $unit; }, ARRAY_FILTER_USE_KEY ),
         'default' => $default_min_unit,
       )
     );
@@ -83,8 +99,8 @@ echo PodsForm::field(
       pods_v( 'max_number', $value ),
       'number',
       array(
-        'number_min' => PodsField_GV_Duration::$duration_min,
-        'number_max' => PodsField_GV_Duration::$duration_max,
+        'number_min' => GVPlugin\GV_Duration_Helper::$duration_min,
+        'number_max' => GVPlugin\GV_Duration_Helper::$duration_max,
         'number_html5' => "1", // required to get <input type="number">
         'default_value' => $default_max_number,
       )
@@ -98,26 +114,13 @@ echo PodsForm::field(
       pods_v( 'max_unit', $value ),
       'pick',
       array(
-        'data' => PodsField_GV_Duration::$duration_units,
+        'data' => GVPlugin\GV_Duration_Helper::$duration_units,
         'default' => $default_max_unit,
       )
     );
     ?>
   </div>
-  <div class="gv_duration_fields_open_ended">
-    <?php
-    echo PodsForm::field(
-      $name . '[open_ended]',
-      pods_v( 'open_ended', $value ),
-      'boolean',
-      array(
-        'boolean_yes_label' => 'Open Ended',
-        // TODO: Why does 'default' work here, but on the number field above I had to use 'default_value'
-        'default' => $default_open_ended,
-      )
-    );
-    ?>
-  </div>
 </div>
+<div><em>To indicate no maximum duration, choose "open ended"</em></div>
 <?php
 PodsForm::regex( $form_field_type, $options );

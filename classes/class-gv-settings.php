@@ -933,6 +933,10 @@ class GV_Settings {
       // Convert legacy durations into an array of volunteer_duration IDs
       $volunteer_duration_ids = array_map( array( $this, 'convert_legacy_volunteer_durations' ), $vol_opp[ 'durations' ] );
 
+      // Convert the min/max_duration into a number/unit pair
+      $min_duration = GV_Duration_Helper::convert_legacy_duration( $vol_opp[ 'min_duration' ] );
+      $max_duration = GV_Duration_Helper::convert_legacy_duration( $vol_opp[ 'max_duration' ] );
+
       // Convert legacy cost labels into a volunteer_cost_label ID
       $volunteer_cost_label_ids = $this->convert_legacy_volunteer_cost_labels( $vol_opp[ 'cost_label' ] );
 
@@ -957,8 +961,15 @@ class GV_Settings {
             'volunteer_url' => $vol_opp[ 'volunteer_url' ],
             'facebook_url' => $vol_opp[ 'facebook_url' ],
             'twitter_username' => $vol_opp[ 'twitter_username' ],
-            'min_duration' => $vol_opp[ 'min_duration' ],
-            'max_duration' => $vol_opp[ 'max_duration' ],
+            'duration' => array(
+              'min_number' => $min_duration[ 'number' ],
+              'min_unit' => $min_duration[ 'unit' ],
+              'max_number' => $max_duration[ 'number' ],
+              'max_unit' => $max_duration[ 'unit' ],
+            ),
+            // Set the _gv_duration_min/max_in_days meta values since the update_post_meta hook will not get triggered
+            '_gv_duration_min_in_days__duration' => intval( $vol_opp[ 'min_duration' ] ),
+            '_gv_duration_max_in_days__duration' => intval( $vol_opp[ 'max_duration' ] ),
             'duration_notes' => $vol_opp[ 'duration_notes' ][ 'html' ],
             'description' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
             'cost_suggestion' => $vol_opp[ 'cost_suggestion' ],
@@ -1029,12 +1040,17 @@ class GV_Settings {
     $legacy_term[ 'name' ] = $name;
     // Pull the term meta values out of legacy_term
     $term_meta = array(
-      'min' => $legacy_term[ 'min' ],
-      'min_units' => $legacy_term[ 'unit' ],
-      'max' => $legacy_term[ 'max' ],
-      'max_units' => $legacy_term[ 'unit' ],
-      'min_in_days' => $legacy_term[ 'min_in_days' ],
-      'max_in_days' => $legacy_term[ 'max_in_days' ],
+      // Convert the numbers to integers
+      // If the max number is the rails max, change the unit to infinite
+      'duration' => array(
+        'min_number' => intval( $legacy_term[ 'min' ] ),
+        'min_unit' => $legacy_term[ 'unit' ],
+        'max_number' => intval( $legacy_term[ 'max' ] ),
+        'max_unit' => GV_Duration_Helper::$duration_max === $legacy_term[ 'max_in_days' ] ? 'infinite' : $legacy_term[ 'unit' ],
+      ),
+      // Set the _gv_duration_min/max_in_days meta values since the update_term_meta hook will not get triggered
+      '_gv_duration_min_in_days__duration' => intval( $legacy_term[ 'min_in_days' ] ),
+      '_gv_duration_max_in_days__duration' => intval( $legacy_term[ 'max_in_days' ] ),
       'legacy_id' => $legacy_term[ 'id' ]
     );
     return $this->convert_legacy_terms( 'volunteer_duration', $legacy_term, $term_meta );

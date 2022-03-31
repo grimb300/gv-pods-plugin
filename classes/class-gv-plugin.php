@@ -90,6 +90,9 @@ class GV_Plugin {
     add_filter( 'pods_api_field_types', array( $this, 'gv_duration_field_add_field_type' ) );
 
     pods_register_field_type( 'gv_duration', GV_PLUGIN_PATH . 'classes/fields/gv-duration.php' );
+
+    // Load the GV_Duration_Helper class
+    require_once GV_PLUGIN_PATH . 'classes/class-gv-duration-helper.php';
   }
 
   public function gv_duration_field_add_field_type( $types ) {
