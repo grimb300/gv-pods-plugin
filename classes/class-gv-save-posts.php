@@ -21,9 +21,9 @@ class GV_Save_Posts {
     add_action( 'updated_term_meta', array( $this, 'gv_updated_term_durations' ), 999, 4 );
   }
 
-  public function gv_updated_post_durations( $meta_id, $object_id, $meta_key, $meta_value ) {
+  public function gv_updated_post_durations( $meta_id, $post_id, $meta_key, $meta_value ) {
     // Call the more generic function with the update type (post or term)
-    $new_min_max = $this->gv_updated_durations( 'post', $meta_id, $object_id, $meta_key, $meta_value );
+    $new_min_max = $this->gv_updated_durations( 'post', $meta_id, $post_id, $meta_key, $meta_value );
     // If gv_updated_durations returned null or an unexpected result, do nothing
     if ( ! is_array( $new_min_max ) || ! array_key_exists( 'min', $new_min_max ) || ! array_key_exists( 'max', $new_min_max ) ) return;
     // Otherwise, update the post with the terms matching the new min/max
@@ -55,12 +55,12 @@ class GV_Save_Posts {
     // gv_debug( 'The matching duration term IDs' );
     // gv_debug( $matching_term_ids );
     // Update the terms for this post, overwrite previous terms
-    wp_set_post_terms( $object_id, $matching_term_ids, 'volunteer_duration', false );
+    wp_set_post_terms( $post_id, $matching_term_ids, 'volunteer_duration', false );
   }
 
-  public function gv_updated_term_durations( $meta_id, $object_id, $meta_key, $meta_value ) {
+  public function gv_updated_term_durations( $meta_id, $term_id, $meta_key, $meta_value ) {
     // Call the more generic function with the update type (post or term)
-    $new_min_max = $this->gv_updated_durations( 'term', $meta_id, $object_id, $meta_key, $meta_value );
+    $new_min_max = $this->gv_updated_durations( 'term', $meta_id, $term_id, $meta_key, $meta_value );
     // gv_debug( 'new_min_max returned' );
     // gv_debug( $new_min_max );
     // If gv_updated_durations returned null or an unexpected result, do nothing
@@ -99,20 +99,20 @@ class GV_Save_Posts {
         if ( 4305 === $post_id ) {
           gv_debug( 'It overlaps' );
         }
-          if ( ! has_term( $object_id, 'volunteer_duration', $post_id ) ) {
-          gv_debug( sprintf( 'Adding term_id %s to post_id %s because it was not already set', $object_id, $post_id ) );
+          if ( ! has_term( $term_id, 'volunteer_duration', $post_id ) ) {
+          gv_debug( sprintf( 'Adding term_id %s to post_id %s because it was not already set', $term_id, $post_id ) );
         }
         // If so, add this term to the post, append to existing term list
-        wp_set_post_terms( $post_id, $object_id, 'volunteer_duration', true );
+        wp_set_post_terms( $post_id, $term_id, 'volunteer_duration', true );
       } else {
-        if ( has_term( $object_id, 'volunteer_duration', $post_id ) ) {
-          gv_debug( sprintf( 'Removing term_id %s from post_id %s because it was already set', $object_id, $post_id ) );
+        if ( has_term( $term_id, 'volunteer_duration', $post_id ) ) {
+          gv_debug( sprintf( 'Removing term_id %s from post_id %s because it was already set', $term_id, $post_id ) );
         }
         if ( 4305 === $post_id ) {
           gv_debug( 'It does not overlap' );
         }
         // Otherwise, remove this term from the post
-        wp_remove_object_terms( $post_id, $object_id, 'volunteer_duration' );
+        wp_remove_object_terms( $post_id, $term_id, 'volunteer_duration' );
       }
     }
   }
@@ -144,12 +144,12 @@ class GV_Save_Posts {
     return array( 'min' => $min_in_days, 'max' => $max_in_days );
   }
 
-  public function gv_updated_post_cost_suggestion ( $meta_id, $object_id, $meta_key, $meta_value ) {
+  public function gv_updated_post_cost_suggestion ( $meta_id, $post_id, $meta_key, $meta_value ) {
     // Call the more generic function with the update type (post or term)
-    $new_number = $this->gv_updated_cost_suggestion( 'post', $meta_id, $object_id, $meta_key, $meta_value );
+    $new_cost_suggestion = $this->gv_updated_cost_suggestion( 'post', $meta_id, $post_id, $meta_key, $meta_value );
 
     // If it returned null, do nothing
-    if ( null === $new_number ) return;
+    if ( null === $new_cost_suggestion ) return;
 
     // Otherwise, update the terms using the new number
     $matching_term_ids = get_terms(
@@ -160,34 +160,66 @@ class GV_Save_Posts {
         'meta_query' => array(
           array(
             'key' => '_gv_cost_label_number__cost_suggestion',
-            'value' => $new_number,
+            'value' => $new_cost_suggestion,
             'compare' => '=',
           ),
         ),
       )
     );
-    wp_set_post_terms( $object_id, $matching_term_ids, 'volunteer_cost_label', false );
+    wp_set_post_terms( $post_id, $matching_term_ids, 'volunteer_cost_label', false );
   }
 
-  public function gv_updated_term_cost_suggestion ( $meta_id, $object_id, $meta_key, $meta_value ) {
+  public function gv_updated_term_cost_suggestion ( $meta_id, $term_id, $meta_key, $meta_value ) {
     // Call the more generic function with the update type (post or term)
-    $new_number = $this->gv_updated_cost_suggestion( 'term', $meta_id, $object_id, $meta_key, $meta_value );
-
+    $new_cost_suggestion = $this->gv_updated_cost_suggestion( 'term', $meta_id, $term_id, $meta_key, $meta_value );
+    
     // If it returned null, do nothing
-    if ( null === $new_number ) return;
+    if ( null === $new_cost_suggestion ) return;
+    gv_debug( sprintf( 'Updated term_id %s to cost_suggestion %s', $term_id, $new_cost_suggestion ) );
 
     // Otherwise, update the posts using the new number
-    // FIXME: Stopping here, questioning the usefulness of having cost_label (and maybe duration for that matter)
-    // as both a field and a taxonomy.
-    // Need to think about this more.
-    return;
     // First step, find all posts associated with this term
     $post_ids = get_posts( array(
       'post_type' => 'vol_opportunity',
       'fields' => 'ids',
       'numberposts' => -1,
       'post_status' => 'publish',
+      'tax_query' => array(
+        array(
+          'taxonomy' => 'volunteer_cost_label',
+          'field' => 'term_id',
+          'terms' => $term_id,
+        ),
+      ),
     ) );
+    // Then remove the term from the matching posts
+    if ( count( $post_ids ) > 0 ) {
+      gv_debug( sprintf( 'Removing term_id %s from posts %s', $term_id, implode( ', ', $post_ids ) ) );
+    }
+    foreach ( $post_ids as $post_id ) {
+      wp_remove_object_terms( $post_id, $term_id, 'volunteer_cost_label' );
+    }
+    // Step two, find all posts with the new cost_suggestion
+    $post_ids = get_posts( array(
+      'post_type' => 'vol_opportunity',
+      'fields' => 'ids',
+      'numberposts' => -1,
+      'post_status' => 'publish',
+      'meta_query' => array(
+        array(
+          'key' => '_gv_cost_label_number__cost_suggestion',
+          'value' => $new_cost_suggestion,
+          'compare' => '=',
+        ),
+      ),
+    ) );
+    // And add the term
+    if ( count( $post_ids ) > 0 ) {
+      gv_debug( sprintf( 'Adding term_id %s to posts %s', $term_id, implode( ', ', $post_ids ) ) );
+    }
+    foreach ( $post_ids as $post_id ) {
+      wp_set_post_terms( $post_id, $term_id, 'volunteer_cost_label', true );
+    }
   }
 
   private function gv_updated_cost_suggestion( $update_type, $meta_id, $object_id, $meta_key, $meta_value ) {
@@ -196,20 +228,20 @@ class GV_Save_Posts {
     gv_debug( 'gv_updated_cost_suggestion: Working on meta key ' . $meta_key );
 
     // Get the new value just updated
-    $new_number = intval( $meta_value[ 'number' ] );
+    $new_cost_suggestion = intval( $meta_value[ 'number' ] );
 
     // Grab the old hidden number value
     $hidden_meta_key = '_gv_cost_label_number__' . $meta_key;
     $old_number = intval( get_metadata( $update_type, $object_id, $hidden_meta_key, true ) );
 
     // If old and new values are the same, no change necessary, return null
-    if ( $old_number === $new_number ) return null;
+    if ( $old_number === $new_cost_suggestion ) return null;
 
     // Update the post or term meta with the hidden value
-    update_metadata( $update_type, $object_id, $hidden_meta_key, $new_number );
+    update_metadata( $update_type, $object_id, $hidden_meta_key, $new_cost_suggestion );
 
     // Return the new number
-    return $new_number;
+    return $new_cost_suggestion;
 
     // Look up the term that corresponds to this cost suggestion
     $cost_suggestion_terms = get_terms(
