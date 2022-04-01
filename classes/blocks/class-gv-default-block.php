@@ -69,12 +69,27 @@ class GV_Default_Block {
     global $post;
 
     // Check that this is the right post type
-    if ( $this->post_type !== $post->post_type ) {
-      return sprintf( '<p style="color: red"><strong><em>This block can only be used on GV "%s" post types!</em></strong></p>', $this->post_type );
+    // To support GeneratePress Elements, allow 'gp_elements' post types as well
+    if ( ! in_array( $post->post_type, [ 'gp_elements', $this->post_type ] ) ) {
+      return sprintf( '<p style="color: red"><strong><em>The %s block can only be used on GV %s post types! Current post type is %s.</em></strong></p>', $this->field_title, $this->post_type, $post->post_type );
     }
     
-    // Get the pod
-    $pod = pods( $this->post_type, $post->ID );
+    // Get the pod for this post
+    // FIXME: To support gp_elements posts, pick the first published post returned from a get_posts query for $this->post_type. I need to come up with a better solution.
+    $post_id = $post->ID;
+    if ( 'gp_elements' === $post->post_type ) {
+      $display_post_ids = get_posts( array(
+        'post_type' => $this->post_type,
+        'numberposts' => 1,
+        'fields' => 'ids',
+        'post_status' => 'publish',
+        'orderby' => 'date', // Pick the oldest post, for now
+        'order' => 'ASC',
+      ) );
+      // gv_debug( sprintf( 'Updating post_id from %s to %s', $post_id, $display_post_ids[0] ) );
+      $post_id = $display_post_ids[0];
+    }
+    $pod = pods( $this->post_type, $post_id );
     if ( ! $pod->exists() ) {
       return sprintf( '<p style="color: red"><strong><em>Unable to load pods for this post!</em></strong></p>', $this->post_type );
     }
@@ -96,7 +111,8 @@ class GV_Default_Block {
     // } elseif ( '' === $display_field_data ) {
     //   $display_field_data = '<p style="color: red"><strong><em>field() returned empty string</em></strong></p>';
     }
-    return sprintf( '%s<div class="%s">%s</div>', $field_heading, $class, $display_field_data );
+    // return sprintf( '%s<div class="%s">%s</div>', $field_heading, $class, $display_field_data );
+    return sprintf( '<div class="%s">%s</div>', $class, $display_field_data );
   }
 
   // This function should be overridden by child classes
