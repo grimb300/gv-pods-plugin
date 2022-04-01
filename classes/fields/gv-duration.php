@@ -90,7 +90,7 @@ class PodsField_GV_Duration extends PodsField {
     $default_min_unit = pods_v( self::$type . '_default_min_unit', $options, 'days' );
     $default_open_ended = pods_v( self::$type . '_default_open_ended', $options, '0' );
     $default_max_number = $default_open_ended ? GVPlugin\GV_Duration_Helper::$duration_max : pods_v( self::$type . '_default_max_number', $options, GVPlugin\GV_Duration_Helper::$duration_max );
-    $default_max_unit = $default_open_ended ? 'days' : pods_v( self::$type . '_default_max_unit', $options, 'days' );
+    $default_max_unit = $default_open_ended ? 'infinite' : pods_v( self::$type . '_default_max_unit', $options, 'days' );
     // GVPlugin\gv_debug( $name . ': Default value: ' . $default_value . ', Default unit: ' . $default_unit . ", Default open_ended: " . $default_open_ended );
 
     $view = GV_PLUGIN_PATH . 'ui/fields/gv-duration.php';

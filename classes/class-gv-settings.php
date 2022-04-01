@@ -968,11 +968,17 @@ class GV_Settings {
               'max_unit' => $max_duration[ 'unit' ],
             ),
             // Set the _gv_duration_min/max_in_days meta values since the update_post_meta hook will not get triggered
+            // FIXME: This may not be true since there is no "field_type" key here
             '_gv_duration_min_in_days__duration' => intval( $vol_opp[ 'min_duration' ] ),
             '_gv_duration_max_in_days__duration' => intval( $vol_opp[ 'max_duration' ] ),
             'duration_notes' => $vol_opp[ 'duration_notes' ][ 'html' ],
             'description' => $vol_opp[ 'description' ][ 'full' ][ 'html' ],
-            'cost_suggestion' => $vol_opp[ 'cost_suggestion' ],
+            'cost_suggestion' => array(
+              'number' => $vol_opp[ 'cost_suggestion' ]
+            ),
+            // Set the _gv_cost_label_number meta value since the update_post_meta hook will not get triggered
+            // FIXME: This may not be true since there is no "field_type" key here
+            '_gv_cost_label_number__cost_suggestion' => intval( $vol_opp[ 'cost_suggestion' ] ),
             'fees_notes' => $vol_opp[ 'fees_notes' ][ 'html' ],
             'other_ways_to_help' => $vol_opp[ 'other_ways_to_help' ][ 'html' ],
             'contact_info' => $vol_opp[ 'contact_info' ],
@@ -1028,7 +1034,12 @@ class GV_Settings {
     }
     // Pull the term meta values out of legacy_term
     $term_meta = array(
-      'cost_suggestion' => $legacy_term[ 'cost_suggestion' ],
+      'cost_suggestion' => array(
+        'number' => $legacy_term[ 'cost_suggestion' ]
+      ),
+      // Set the _gv_cost_label_number meta value since the update_post_meta hook will not get triggered
+      // FIXME: This may not be true since there is no "field_type" key here
+      '_gv_cost_label_number__cost_suggestion' => intval( $legacy_term[ 'cost_suggestion' ] ),
       'legacy_id' => $legacy_term[ 'id' ]
     );
     return $this->convert_legacy_terms( 'volunteer_cost_label', $legacy_term, $term_meta );

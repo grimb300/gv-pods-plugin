@@ -15,7 +15,8 @@ class GV_Save_Posts {
     // Right now this is only used to report updates to the internal_slug meta value
     // add_action( 'updated_post_meta', array( $this, 'gv_report_internal_slug' ), 999, 4 );
     add_action( 'set_object_terms', array( $this, 'gv_monitor_set_terms' ), 999, 6 );
-    add_action( 'updated_post_meta', array( $this, 'gv_updated_cost_suggestion' ), 999, 4 );
+    add_action( 'updated_post_meta', array( $this, 'gv_updated_post_cost_suggestion' ), 999, 4 );
+    add_action( 'updated_term_meta', array( $this, 'gv_updated_term_cost_suggestion' ), 999, 4 );
     add_action( 'updated_post_meta', array( $this, 'gv_updated_post_durations' ), 999, 4 );
     add_action( 'updated_term_meta', array( $this, 'gv_updated_term_durations' ), 999, 4 );
   }
@@ -136,98 +137,79 @@ class GV_Save_Posts {
     if ( $old_min_in_days === $min_in_days && $old_max_in_days === $max_in_days ) return null;
 
     // Update the post or term meta with hidden values _gv_duration_min_in_days__<$meta_key> and _gv_duration_max_in_days__<$meta_key>
-    update_metadata( $update_type, $object_id, '_gv_duration_min_in_days__' . $meta_key, $min_in_days );
-    update_metadata( $update_type, $object_id, '_gv_duration_max_in_days__' . $meta_key, $max_in_days );
+    update_metadata( $update_type, $object_id, $meta_key_min, $min_in_days );
+    update_metadata( $update_type, $object_id, $meta_key_max, $max_in_days );
 
     // Return the new min/max values
     return array( 'min' => $min_in_days, 'max' => $max_in_days );
+  }
 
-    // TODO: I think that I need to create a new field type that allows the user
-    //       to enter a duration as a (number, units) pair.
-    //       This will make the query more straightforward.
-    // The current state of the duration meta fields (post and terms) requires
-    // a query of all the terms and then do a comparison manually.
-    $duration_terms = get_terms(
+  public function gv_updated_post_cost_suggestion ( $meta_id, $object_id, $meta_key, $meta_value ) {
+    // Call the more generic function with the update type (post or term)
+    $new_number = $this->gv_updated_cost_suggestion( 'post', $meta_id, $object_id, $meta_key, $meta_value );
+
+    // If it returned null, do nothing
+    if ( null === $new_number ) return;
+
+    // Otherwise, update the terms using the new number
+    $matching_term_ids = get_terms(
       array(
-        'taxonomy' => 'volunteer_duration',
+        'taxonomy' => 'volunteer_cost_label',
         'hide_empty' => false,
+        'fields' => 'ids',
+        'meta_query' => array(
+          array(
+            'key' => '_gv_cost_label_number__cost_suggestion',
+            'value' => $new_number,
+            'compare' => '=',
+          ),
+        ),
       )
     );
-    // gv_debug( sprintf( 'Found %s durations', count( $duration_terms ) ) );
+    wp_set_post_terms( $object_id, $matching_term_ids, 'volunteer_cost_label', false );
+  }
 
-    // Since the min/max_durations are updated independently, get the other value through get_post_meta
-    $min_duration = 'min_duration' === $meta_key ? $meta_value : get_post_meta( $object_id, 'min_duration', true );
-    $max_duration = 'max_duration' === $meta_key ? $meta_value : get_post_meta( $object_id, 'max_duration', true );
-    // Doing more cleanup
-    // if ( empty( $min_duration ) ) $min_duration = 0;
-    // if ( empty( $max_duration ) ) $max_duration = 1073741823;
-    // gv_debug( sprintf( 'Working with post duration %s to %s days', $min_duration, $max_duration ) );
+  public function gv_updated_term_cost_suggestion ( $meta_id, $object_id, $meta_key, $meta_value ) {
+    // Call the more generic function with the update type (post or term)
+    $new_number = $this->gv_updated_cost_suggestion( 'term', $meta_id, $object_id, $meta_key, $meta_value );
 
-    // Filter the duration terms using the min/max_duration
-    $matching_terms = array_filter(
-      $duration_terms,
-      function ( $term ) use ( $min_duration, $max_duration ) {
-        // Get the term min/max calculated in days
-        $term_min = get_term_meta( $term->term_id, 'min', true );
-        // Not sure why, but 0 weeks min returns a null value, fix that here
-        if ( empty( $term_min ) ) $term_min = 0;
-        $term_min_units = get_term_meta( $term->term_id, 'min_units', true );
-        // gv_debug( sprintf( 'Term min for %s is %s %s', $term->name, $term_min, $term_min_units ) );
-        $term_min_in_days = 'weeks' === $term_min_units ? 7 * $term_min : (
-          'months' === $term_min_units ? 30 * $term_min : (
-            'years' === $term_min_units ? 365 * $term_min : $term_min
-          )
-        );
-        // More cleanup
-        if ( $term_min_in_days > 1073741823 ) $term_min_in_days = 1073741823;
+    // If it returned null, do nothing
+    if ( null === $new_number ) return;
 
-        $term_max = get_term_meta( $term->term_id, 'max', true );
-        $term_max_units = get_term_meta( $term->term_id, 'max_units', true );
-        $term_max_in_days = 'weeks' === $term_max_units ? 7 * $term_max : (
-          'months' === $term_max_units ? 30 * $term_max : (
-            'years' === $term_max_units ? 365 * $term_max : $term_max
-          )
-        );
-        // More cleanup
-        if ( $term_max_in_days > 1073741823 ) $term_max_in_days = 1073741823;
-
-        // Figure out if the term covers at least part of the post's duration
-        // if ( $term_min_in_days >= $min_duration ) gv_debug( sprintf( 'Term min (%s) is greater than the post min (%s)', $term_min_in_days, $min_duration ) );
-        // if ( $term_min_in_days <= $max_duration ) gv_debug( sprintf( 'Term min (%s) is less    than the post max (%s)', $term_min_in_days, $max_duration ) );
-        // if ( $term_max_in_days >= $min_duration ) gv_debug( sprintf( 'Term max (%s) is greater than the post min (%s)', $term_max_in_days, $min_duration ) );
-        // if ( $term_max_in_days <= $max_duration ) gv_debug( sprintf( 'Term max (%s) is less    than the post max (%s)', $term_max_in_days, $max_duration ) );
-        return ( ( $term_min_in_days >= $min_duration ) && ( $term_min_in_days <= $max_duration ) ) ||
-               ( ( $term_max_in_days >= $min_duration ) && ( $term_max_in_days <= $max_duration ) );
-      }
-    );
-
-    // If at least one term found, update the post
-    if ( count( $matching_terms ) > 0 ) {
-      // gv_debug( 'Found matching durations ' . implode( ', ', array_map( function ( $term ) { return $term->name; }, $matching_terms ) ) );
-      // $matching_term_ids = array_map( function ($t) { return $t->term_id; }, $matching_terms );
-      // gv_debug( 'matching term ids: ' . implode( ', ', $matching_term_ids ) );
-      // wp_set_post_terms( $object_id, $matching_term_ids, '$taxonomy:string', $append:boolean )
-      wp_set_post_terms(
-        $object_id,
-        array_map( function ( $term ) { return $term->term_id; }, $matching_terms ),
-        'volunteer_duration',
-        false
-      );
-      // gv_debug( 'Should return here' );
-      return;
-    }
-    
-    // If we make it this far, something went wrong
-    gv_debug( sprintf(
-      'ERROR: Unexpected number of terms matching the cost_suggestion of %s (%s)',
-      $meta_value, count( $matching_terms )
+    // Otherwise, update the posts using the new number
+    // FIXME: Stopping here, questioning the usefulness of having cost_label (and maybe duration for that matter)
+    // as both a field and a taxonomy.
+    // Need to think about this more.
+    return;
+    // First step, find all posts associated with this term
+    $post_ids = get_posts( array(
+      'post_type' => 'vol_opportunity',
+      'fields' => 'ids',
+      'numberposts' => -1,
+      'post_status' => 'publish',
     ) );
   }
 
-  public function gv_updated_cost_suggestion( $meta_id, $object_id, $meta_key, $meta_value ) {
+  private function gv_updated_cost_suggestion( $update_type, $meta_id, $object_id, $meta_key, $meta_value ) {
     // Return unless this is a cost_suggestion update
-    if ( 'cost_suggestion' !== $meta_key ) return;
-    // gv_debug( 'gv_updated_cost_suggestion: Working on meta key ' . $meta_key );
+    if ( empty( $meta_value[ 'field_type' ] ) || 'gv_cost_label' !== $meta_value[ 'field_type' ] ) return null;
+    gv_debug( 'gv_updated_cost_suggestion: Working on meta key ' . $meta_key );
+
+    // Get the new value just updated
+    $new_number = intval( $meta_value[ 'number' ] );
+
+    // Grab the old hidden number value
+    $hidden_meta_key = '_gv_cost_label_number__' . $meta_key;
+    $old_number = intval( get_metadata( $update_type, $object_id, $hidden_meta_key, true ) );
+
+    // If old and new values are the same, no change necessary, return null
+    if ( $old_number === $new_number ) return null;
+
+    // Update the post or term meta with the hidden value
+    update_metadata( $update_type, $object_id, $hidden_meta_key, $new_number );
+
+    // Return the new number
+    return $new_number;
 
     // Look up the term that corresponds to this cost suggestion
     $cost_suggestion_terms = get_terms(

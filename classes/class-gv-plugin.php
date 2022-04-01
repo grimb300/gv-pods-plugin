@@ -50,9 +50,9 @@ class GV_Plugin {
 
     // Register the GV custom field types
     // TODO: Should this be in a different file?
-    // TODO: Figure out the duration field
     add_action( 'plugins_loaded', array( $this, 'gv_phone_numbers_field_init'), 20 );
     add_action( 'plugins_loaded', array( $this, 'gv_duration_field_init'), 20 );
+    add_action( 'plugins_loaded', array( $this, 'gv_cost_label_field_init'), 20 );
 
     // Load the custom save functions
     require_once GV_PLUGIN_PATH . 'classes/class-gv-save-posts.php';
@@ -101,6 +101,25 @@ class GV_Plugin {
     return $types;
   }
 
+  public function gv_cost_label_field_init() {
+    // TODO: Should this be in a different file?
+    // Return if Pods not active
+    // TODO: This check should be done earlier, I think
+    if ( ! function_exists( 'pods' ) || ! function_exists( 'pods_register_field_type' ) | ! defined( 'PODS_DIR' ) ) {
+      return;
+    }
+
+    add_filter( 'pods_api_field_types', array( $this, 'gv_cost_label_field_add_field_type' ) );
+
+    pods_register_field_type( 'gv_cost_label', GV_PLUGIN_PATH . 'classes/fields/gv-cost-label.php' );
+  }
+
+  public function gv_cost_label_field_add_field_type( $types ) {
+    // TODO: Should this be in a different file?
+    $types[] = 'gv_cost_label';
+    return $types;
+  }
+
   public function gv_jquery_in_head() {
     wp_enqueue_script( 'jquery', false, array(), false, false );
   }
@@ -112,13 +131,13 @@ class GV_Plugin {
 
   // Plugin activation
   public function gv_activation() {
-    gv_debug( 'GV_Plugin activate!' );
+    // gv_debug( 'GV_Plugin activate!' );
     // Check if the Pods plugin is active
     if ( ! is_plugin_active( 'pods/init.php' ) ) {
-      gv_debug( 'Pods plugin is NOT active' );
+      // gv_debug( 'Pods plugin is NOT active' );
       die( 'Grassroots Volunteering Plugin requires the Pods plugin to be activated' );
     } else {
-      gv_debug( 'Pods plugin is active' );
+      // gv_debug( 'Pods plugin is active' );
       // Get all available pods
       // Using this Pods documentation:
       //   https://pods.io/docs/code/
@@ -129,22 +148,22 @@ class GV_Plugin {
       // gv_debug( array_map( function( $pod ) {
       //   return $pod[ 'name' ];
       // }, $all_pods ) );
-      gv_debug( 'Pods details:' );
-      foreach( $all_pods as $pod ) {
-        if ( 'business' === $pod[ 'name' ] ) {
-          gv_debug( 'Business CPT' );
-          gv_debug( $pod );
-        }
-        if ( 'table_business' === $pod[ 'name' ] ) {
-          gv_debug( 'Business Custom Table' );
-          gv_debug( $pod );
-        }
-      }
+      // gv_debug( 'Pods details:' );
+      // foreach( $all_pods as $pod ) {
+      //   if ( 'business' === $pod[ 'name' ] ) {
+      //     gv_debug( 'Business CPT' );
+      //     gv_debug( $pod );
+      //   }
+      //   if ( 'table_business' === $pod[ 'name' ] ) {
+      //     gv_debug( 'Business Custom Table' );
+      //     gv_debug( $pod );
+      //   }
+      // }
     }
   }
 
   // Plugin deactivation
   public function gv_deactivation() {
-    gv_debug( 'GV_Plugin deactivate!' );
+    // gv_debug( 'GV_Plugin deactivate!' );
   }
 }
