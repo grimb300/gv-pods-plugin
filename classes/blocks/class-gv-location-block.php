@@ -35,8 +35,16 @@ class GV_Location_Block extends GV_Default_Block {
     // TODO: This is a quick and dirty way to display the current business on a map.
     //       Eventually upgrade this to have markers for other businesses and parameterize it better.
     //       Someday it might even use the pods map type. :)
-    $lat = $field_data['geo']['lat'];
-    $lng = $field_data['geo']['lng'];
+    // NOTE: My importer saves the lat/lng as a float. The maps plugin saves it as a string. Need to convert it first.
+    $lat = $lng = NULL;
+    if ( array_key_exists( 'geo', $field_data ) ) {
+      if ( array_key_exists( 'lat', $field_data['geo'] ) ) {
+        $lat = floatval( $field_data['geo']['lat'] );
+      }
+      if ( array_key_exists( 'lng', $field_data['geo'] ) ) {
+        $lng = floatval( $field_data['geo']['lng'] );
+      }
+    }
 
     // Check that the lat/lng are actually valid. No need to set up the map if they aren't
     if ( is_float( $lat ) && is_float( $lng ) ) {
