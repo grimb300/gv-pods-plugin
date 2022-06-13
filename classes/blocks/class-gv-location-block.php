@@ -115,7 +115,17 @@ class GV_Location_Block extends GV_Default_Block {
       ';
     } else {
       $field_data = '
-      <div style="height: 400px; width: 100%; background-color: #b0b0b0;"><div>Unable to display the map at this time</div></div>
+      <style>
+        .gv-map-error {
+          height: 400px;
+          width: 100%;
+          background-color: #b0b0b0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+      </style>
+      <div class="gv-map-error"><h4>Unable to display the map at this time</h4></div>
       ';
     }
 
