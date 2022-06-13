@@ -1,0 +1,14 @@
+Working API key (dev):  AIzaSyCJuYiZXwKDW3Tllj6FssIoPG6xTIQCr6Y
+Broken key (staging):   AIzaSyDvysXd6ARU647Mdk6AVwaPIh011bMvZWo -- This is the client side key
+Working key (staging):  AIzaSyDvysXd6ARU647Mdk6AVwaPIh011bMvZWo
+
+Why isn't mine working?
+
+Broken call:
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvysXd6ARU647Mdk6AVwaPIh011bMvZWo&callback=initMap&libraries=&v=weekly"
+      async
+    ></script>
+
+Working call:
+<script src='//maps.googleapis.com/maps/api/js?key=AIzaSyDvysXd6ARU647Mdk6AVwaPIh011bMvZWo&#038;ver=3' id='googlemaps-js'></script>
