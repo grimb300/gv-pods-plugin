@@ -18,81 +18,93 @@ class GV_Location_Block extends GV_Default_Block {
    * Methods
    * *******/
 
+  // Static helper function
+  // Pull lat/lng out of the location data
+  // Returns array with keys "lat" and "lng" if successful. Empty array otherwise.
+  private static function get_lat_lng( $data ) {
+    gv_debug( 'get_lat_lng called with data' );
+    gv_debug( $data );
+    // Attempt a conversion only if the input has the expected format
+    if ( ! empty( $data['geo'] ) && is_array( $data['geo'] ) ) {
+      gv_debug( 'Converting the geo data to' );
+      // Convert the values withing the geo array into floats
+      $converted_data = array_map(
+        function ( $val ) { return floatval( $val ); },
+        $data['geo']
+      );
+      gv_debug( $converted_data );
+      gv_debug( 'Filtering the converted data to' );
+      // Filter out the values that aren't floats
+      $filtered_data = array_filter(
+        $converted_data,
+        function ( $val ) { return is_float( $val ); }
+      );
+      gv_debug( $filtered_data );
+      // If filtered array contains expected values, return them.
+      if ( array_key_exists( 'lat', $filtered_data ) && array_key_exists( 'lng', $filtered_data ) ) {
+        return $filtered_data;
+      }
+    }
+    // If we make it this far, fail
+    return array();
+  }
+
   // Display the field
   protected function format_field_data( $field_data = null, $attributes = array() ) {
     global $post;
-    // $pod = pods( $this->post_type, $post->ID );
-    // $return_string = $pod->display( $this->field_name );
-    // gv_debug( $return_string );
-    // return $return_string;
-    // wp_enqueue_script( 'googlemaps' );
-    // wp_enqueue_script( 'pods-maps' );
-    // wp_enqueue_style( 'pods-maps' );
 
-    // gv_debug( 'map field data' );
-    // gv_debug( $field_data );
+    // Get the lat/lng values out of $field_data
+    $this_location = self::get_lat_lng( $field_data );
 
-    // TODO: This is a quick and dirty way to display the current business on a map.
-    //       Eventually upgrade this to have markers for other businesses and parameterize it better.
-    //       Someday it might even use the pods map type. :)
-    // NOTE: My importer saves the lat/lng as a float. The maps plugin saves it as a string. Need to convert it first.
-    $lat = $lng = NULL;
-    if ( array_key_exists( 'geo', $field_data ) ) {
-      if ( array_key_exists( 'lat', $field_data['geo'] ) ) {
-        $lat = floatval( $field_data['geo']['lat'] );
-      }
-      if ( array_key_exists( 'lng', $field_data['geo'] ) ) {
-        $lng = floatval( $field_data['geo']['lng'] );
-      }
-    }
-
-    // Check that the lat/lng are actually valid. No need to set up the map if they aren't
-    if ( is_float( $lat ) && is_float( $lng ) ) {
-
-      // Really dumb way of adding the rest of the businesses to the map. Create an array of all other businesses.
-      // FIXME: Should make this a little smarter at some point to display only the businesses that are visible
-      //        or within some reasonable distance from the business on this page.
-      // gv_debug( sprintf( 'This post is ID %s', $post->ID ) );
-      $other_businesses = pods( 'business', array(
-        'limit' => -1,
-        'where' => 't.ID NOT IN (' . $post->ID . ')',
-      ) );
-      // Create a JavaScript array with interesting info
-      $js_other_businesses_object = array();
-      // If businesses were found
-      if ( $other_businesses->total() > 0 ) {
-        // Loop over the businesses
-        while ( $other_businesses->fetch() ) {
-          $location = $other_businesses->field( $this->field_name );
-          $name = $other_businesses->field( 'business_name' );
-          // gv_debug( sprintf( '%s at lat: %s, lng: %s', $name, $location['geo']['lat'], $location['geo']['lng'] ) );
-          // Add the business to the JS object only if the lat and lng are floats
-          if ( is_float( $location['geo']['lat'] ) && is_float( $location['geo']['lng'] ) ) {
-            $js_other_businesses_object[] = sprintf( '
-            { name: "%s", location: { lat: %s, lng: %s } }', $name, $location['geo']['lat'], $location['geo']['lng'] );
-          }
+    // Really dumb way of adding the rest of the businesses to the map. Create an array of all other businesses.
+    // FIXME: Should make this a little smarter at some point to display only the businesses that are visible
+    //        or within some reasonable distance from the business on this page.
+    // gv_debug( sprintf( 'This post is ID %s', $post->ID ) );
+    $other_businesses = pods( 'business', array(
+      'limit' => -1,
+      'where' => 't.ID NOT IN (' . $post->ID . ')',
+    ) );
+    // Create a JavaScript array with interesting info.
+    $js_other_businesses_object = array();
+    // If businesses were found
+    if ( $other_businesses->total() > 0 ) {
+      // Loop over the businesses
+      while ( $other_businesses->fetch() ) {
+        $location = self::get_lat_lng( $other_businesses->field( $this->field_name ) );
+        $name = $other_businesses->field( 'business_name' );
+        // Add the business to the JS object only if the location is valid
+        if ( ! empty( $location ) ) {
+          $js_other_businesses_object[] = sprintf( '
+          { name: "%s", location: { lat: %s, lng: %s } }', $name, $location['lat'], $location['lng'] );
         }
       }
-      // gv_debug( sprintf( 'Pods found %s matching businesses', $other_businesses->total() ) );
-      $gv_settings = get_option( 'gv_settings' );
-      $api_key = $gv_settings[ 'google_maps_js_api_key' ];
-      $field_data = '
-      <style>
-      /* Set the size of the div element that contains the map */
-      #map {
-        height: 400px;
-        width: 100%;
-      }
-      </style>
+    }
+    // gv_debug( sprintf( 'Pods found %s matching businesses', $other_businesses->total() ) );
+    $gv_settings = get_option( 'gv_settings' );
+    $api_key = $gv_settings[ 'google_maps_js_api_key' ];
+    // Style the map height/width
+    $field_data = '
+    <style>
+    /* Set the size of the div element that contains the map */
+    #gv-location-map {
+      height: 400px;
+      width: 100%;
+    }
+    </style>
+    ';
+    // If the location of this buisiness is valid, add the JS controlling the map
+    if ( ! empty( $this_location ) ) {
+      $field_data .= '
       <script>
       // Initialize and add the map
       function initMap() {
         // The location of the business
-        const business = { lat: ' . $lat . ', lng: ' . $lng . ' };
+        // FIXME: Right now if either lat or lng are null, maps will throw an exception. Maybe this is okay?
+        const business = { lat: ' . $this_location['lat'] . ', lng: ' . $this_location['lng'] . ' };
         // The other businesses (temporary)
         const otherBusinesses = [ ' . implode( ', ', $js_other_businesses_object ) . ' ];
         // The map, centered on the business
-        const map = new google.maps.Map(document.getElementById("map"), {
+        const map = new google.maps.Map(document.getElementById("gv-location-map"), {
           zoom: 12,
           center: business,
         });
@@ -115,29 +127,33 @@ class GV_Location_Block extends GV_Default_Block {
         } );
       }
       </script>
-      <div id="map"></div>
-      <script
-        src="https://maps.googleapis.com/maps/api/js?key=' . $api_key . '&callback=initMap&libraries=&v=weekly"
-        async
-      ></script>
       ';
-    } else {
-      $field_data = '
+    }
+    // The div that will be converted into a map
+    $field_data .= '
+    <div id="gv-location-map">
       <style>
-        .gv-map-error {
-          height: 400px;
-          width: 100%;
+        #gv-location-map {
           background-color: #b0b0b0;
           display: flex;
           justify-content: center;
           align-items: center;
         }
       </style>
-      <div class="gv-map-error"><h4>Unable to display the map at this time</h4></div>
+      <h4>Unable to display the map at this time</h4>
+    </div>
+    ';
+    // Finally, the maps JS from Google, if we have a valid location to display
+    if ( ! empty( $this_location ) ) {
+      $field_data .= '
+      <script
+        src="https://maps.googleapis.com/maps/api/js?key=' . $api_key . '&callback=initMap&libraries=&v=weekly"
+        async
+      ></script>
       ';
     }
-
     return $field_data;
     return '<p style="color: red"><strong><em>don\'t know how to display a location field yet.</em></strong></p>';
   }
+
 }
