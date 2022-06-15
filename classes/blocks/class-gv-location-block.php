@@ -22,24 +22,18 @@ class GV_Location_Block extends GV_Default_Block {
   // Pull lat/lng out of the location data
   // Returns array with keys "lat" and "lng" if successful. Empty array otherwise.
   private static function get_lat_lng( $data ) {
-    gv_debug( 'get_lat_lng called with data' );
-    gv_debug( $data );
     // Attempt a conversion only if the input has the expected format
     if ( ! empty( $data['geo'] ) && is_array( $data['geo'] ) ) {
-      gv_debug( 'Converting the geo data to' );
       // Convert the values withing the geo array into floats
       $converted_data = array_map(
         function ( $val ) { return floatval( $val ); },
         $data['geo']
       );
-      gv_debug( $converted_data );
-      gv_debug( 'Filtering the converted data to' );
       // Filter out the values that aren't floats
       $filtered_data = array_filter(
         $converted_data,
         function ( $val ) { return is_float( $val ); }
       );
-      gv_debug( $filtered_data );
       // If filtered array contains expected values, return them.
       if ( array_key_exists( 'lat', $filtered_data ) && array_key_exists( 'lng', $filtered_data ) ) {
         return $filtered_data;

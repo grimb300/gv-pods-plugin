@@ -57,6 +57,10 @@ class GV_Plugin {
     // Load the custom save functions
     require_once GV_PLUGIN_PATH . 'classes/class-gv-save-posts.php';
     $this->gv_save_posts = new GV_Save_Posts();
+
+    // Not making this a class for the time being to see what happens
+    // Load the hooks into GeneratePress
+    require_once GV_PLUGIN_PATH . 'includes/gv-generatepress-hooks.php';
     
   }
   
