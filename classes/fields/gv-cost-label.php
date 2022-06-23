@@ -66,7 +66,7 @@ class PodsField_GV_Cost_Label extends PodsField {
     // If the stored meta value is an array (associative or otherwise, I think),
     // and that array has only one element, $value is that element. If there are multiple elements, $value is an array.
     // Dealing with this here.
-    GVPlugin\gv_debug( sprintf( 'value is %s', is_array( $value ) ? 'an array with [number] = ' . $value[ 'number' ] : 'not an array with value ' . $value ) );
+    // GVPlugin\gv_debug( sprintf( 'value is %s', is_array( $value ) ? 'an array with [number] = ' . $value[ 'number' ] : 'not an array with value ' . $value ) );
     $number = is_array( $value ) ? pods_v( 'number', $value ) : $value;
 
     // Get the volunteer_cost_label terms to fill in the $cost_labels array

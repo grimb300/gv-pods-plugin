@@ -6,7 +6,7 @@
     'gv_cost_label',
     'hidden'
   );
-  GVPlugin\gv_debug( 'gv_cost_label[number] is ' . $number );
+  // GVPlugin\gv_debug( 'gv_cost_label[number] is ' . $number );
   echo PodsForm::field(
     $name . '[number]',
     $number,

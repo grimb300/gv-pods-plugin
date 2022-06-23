@@ -200,10 +200,15 @@ function gv_details_content( $content ) {
       if ( ! empty( $vol_url ) ) {
         $details[] = sprintf( '<p class="gv-volunteer-link" style="text-align: center;"><a href="%s" class="button">Apply Now</a></p>', $vol_url );
       }
-      $paired_business = $pod->field( 'paired_business' );
-      if ( ! empty( $paired_business ) ) {
-        $details[] = $paired_business;
-        $details[] = sprintf('<p class="gv-paired_business" style="text-align: center;">%s</p>', $paired_business );
+      $paired_business = $pod->field( 'paired_businesses' );
+      gv_debug( 'Paired business' );
+      gv_debug( $paired_business );
+      if ( ! empty( $paired_business ) && is_array( $paired_business ) ) {
+        foreach ( $paired_business as $bus ) {
+          $bus_name = $bus[ 'post_title' ];
+          $bus_url = $bus[ 'guid' ];
+          $details[] = sprintf('<p class="gv-paired_business" style="text-align: center;"><a href="%s" class="button">Visit the associated business: %s</a></p>', $bus_url, $bus_name );
+        }
       }
       $details[] = '</div>';
 
