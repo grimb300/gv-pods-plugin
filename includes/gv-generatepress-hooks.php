@@ -163,8 +163,6 @@ function gv_details_content( $content ) {
           'heading' => 'Duration',
           'text' => $duration,
         );
-        // $details[] = '<h5>Duration</h5>';
-        // $details[] = sprintf( '<p class="gv-duration">%s</p>', $duration );
       }
       //   Fees
       $fees = $pod->field( 'fees_notes' );
@@ -173,8 +171,6 @@ function gv_details_content( $content ) {
           'heading' => 'Fees',
           'text' => $fees,
         );
-        // $details[] = '<h5>Fees</h5>';
-        // $details[] = sprintf( '<p class="gv-fees">%s</p>', $fees );
       }
       //   Other Ways You Can Help
       $other_ways = $pod->field( 'other_ways_to_help' );
@@ -183,46 +179,111 @@ function gv_details_content( $content ) {
           'heading' => 'Other Ways You Can Help',
           'text' => $other_ways,
         );
-        // $details[] = '<h5>Other Ways You Can Help</h5>';
-        // $details[] = sprintf( '<p class="gv-other_ways">%s</p>', $other_ways );
       }
       //   Contact
-      // $details[] = '<h5>Contact</h5>';
-      // $details[] = sprintf( '<p>For more information about volunteering with %s, visit them online:</p>', get_the_title( $post_id ) );-
       $links = array();
       $website = $pod->field( 'organization_url' );
       if ( ! empty( $website ) ) {
         $links[ 'web' ] = $website;
-        // $links[] = sprintf( '<a href="%s">%s</a>', $website, gv_get_svg_icon( 'web' ) );
       }
       $facebook = $pod->field( 'facebook_url' );
       if ( ! empty( $facebook ) ) {
         $links[ 'facebook' ] = $facebook;
-        // $links[] = sprintf( '<a href="%s">%s</a>', $facebook, gv_get_svg_icon( 'facebook' ) );
       }
       $twitter = $pod->field( 'twitter_username' );
       if ( ! empty( $twitter ) ) {
         $links[ 'twitter' ] = sprintf( 'http://twitter.com/=%s', $twitter );
-        // $links[] = sprintf( '<a href="http://twitter.com/=%s">%s</a>', $twitter, gv_get_svg_icon( 'twitter' ) );
       }
       if ( ! empty( $links ) ) {
-        $text = sprintf( '<p>For more information about volunteering with %s, visit them online:</p>', get_the_title( $post_id ) );
+        $link_html = array();
         foreach ( $links as $type => $link ) {
-          $text .= sprintf( '<a href="%s">%s</a>', $link, gv_get_svg_icon( $type ) );
+          $link_html[] = sprintf( '<a href="%s">%s</a>', $link, gv_get_svg_icon( $type ) );
         }
+        $text = sprintf(
+'<p>For more information about volunteering with %s, visit them online:</p>
+<div class="gv-contact-links">%s</div>',
+          get_the_title( $post_id ), implode( ' ', $link_html ) );
         $sub_sections[ 'contact' ] = array(
           'heading' => 'Contact',
           'text' => $text,
+          'style' => '.gv-contact-links { font-size: 44px; }',
         ); 
-        // $details[] = sprintf('<p class="gv-contact-links" style="font-size: 44px;">%s</p>', implode( ' ', $links ) );
       }
       // Volunteer button
       $vol_url = $pod->field( 'volunteer_url' );
       if ( ! empty( $vol_url ) ) {
         $sub_sections[ 'volunteer-link' ] = array(
           'text' => sprintf( '<a href="%s" class="button">Apply Now</a>', $vol_url ),
+          'style' => '.gv-volunteer-link { text-align: center; }',
         );
-        // $details[] = sprintf( '<p class="gv-volunteer-link" style="text-align: center;"><a href="%s" class="button">Apply Now</a></p>', $vol_url );
+      }
+    }
+    // Businesses details subsections:
+    if ( 'business' === $post_type ) {
+      // Hours
+      $hours = $pod->field( 'hours' );
+      if ( ! empty( $hours ) ) {
+        $sub_sections[ 'hours' ] = array(
+          'heading' => 'Hours',
+          'text' => $hours,
+        );
+      }
+
+      // Contact detials (phone, website, address)
+      $contact_details = array();
+
+      // Phone number(s)
+      $phone = $pod->field( 'phone_numbers' );
+      if ( ! empty( $phone ) ) {
+        // TODO: Consider making the phone numbers array an array of arrays, less hard coded BS
+        $phone_details = array();
+        for ( $i = 0; $i <= 2; $i++ ) {
+          $num = empty( $phone[ 'number_' . $i ] ) ? '' : $phone[ 'number_' . $i ];
+          $dsc = empty( $phone[ 'description_' . $i ] ) ? '' : $phone[ 'description_' . $i ];
+          if ( ! empty( $num ) ) {
+            $phone_details[] = sprintf( '%s%s', $num, empty( $dsc ) ? '' : " ($dsc)" );
+          }
+        }
+        $contact_details[ 'phone' ] = array(
+          'icon' => gv_get_svg_icon( 'phone' ),
+          'data' => implode( '<br>', $phone_details )
+        );
+      }
+
+      // Website
+      $website = $pod->field( 'url' );
+      if ( ! empty( $website ) ) {
+        $contact_details[ 'web' ] = array(
+          'icon' => gv_get_svg_icon( 'web' ),
+          'data' => sprintf( '<a href="%s">Website</a>', $website),
+        );
+      }
+
+      // Address
+      $address = $pod->field( 'address' );
+      if ( ! empty( $address ) ) {
+        $contact_details[ 'address' ] = array(
+          'icon' => gv_get_svg_icon( 'home' ),
+          'data' => $address,
+        );
+      }
+
+      if ( ! empty( $contact_details ) ) {
+        $contact_html = array();
+        foreach( $contact_details as $type => $detail ) {
+          $contact_html[] = sprintf(
+'<div class="gv-contact-row gv-%s">
+  <div class="gv-contact-icon">%s</div>
+  <div class="gv-contact-data">%s</div>
+</div>',
+            $type, $detail[ 'icon' ], $detail[ 'data' ]
+          );
+        }
+        $sub_sections[ 'contact' ] = array(
+          'heading' => 'Contact',
+          'text' => implode( "\n", $contact_html ),
+          'style' => '.gv-contact-row { display: flex; align-items: center; gap: 1em; } .gv-contact-icon { font-size: 44px; }'
+        );
       }
     }
     // The paired business/volunteer opportunity button is a shared subsection
@@ -235,17 +296,21 @@ function gv_details_content( $content ) {
       $index = sprintf( 'paired_%s', 'business' === $post_type ? 'vol_opp' : 'business' );
       $sub_sections[ $index ] = array(
         'text' => $text,
+        'style' => sprintf( '.gv-%s { text-align: center; }', $index ),
       );
     }
 
     // The default styles
     $styles = array(
-      '.gv-details {
-          background-color: #f0f0f0;
-          padding: 10px;
-          border: 1px solid black;
-          border-radius: 10px;
-      }',
+'.gv-details {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 10px;
+  }
+  .gv-details-section {
+    margin-bottom: 1.5em;
+  }',
     );
     // The subsection html
     $html = array();
@@ -256,145 +321,34 @@ function gv_details_content( $content ) {
         $styles[] = $section[ 'style' ];
       }
       // Assuming that if there is a subsection defined that a div needs to be created
-      $html[] = sprintf( '<div class="gv-%s">', $index );
+      $html[] = sprintf( '<div class="gv-details-section gv-%s">', $index );
       if ( ! empty( $section[ 'heading' ] ) ) {
-        $html[] = sprintf( '<h5 class="gv-%s-heading">%s</h5>', $index, $section[ 'heading' ] );
+        $html[] = sprintf( '<h5 class="gv-details-section-heading gv-%s-heading">%s</h5>', $index, $section[ 'heading' ] );
       }
       if ( ! empty( $section[ 'text' ] ) ) {
-        $html[] = sprintf( '<div class="gv-%s-text">%s</div>', $index, $section[ 'text' ] );
+        $html[] = sprintf(
+'<div class="gv=details-section-text gv-%s-text">
+  %s
+</div> <!-- .gv-%s-text -->', $index, $section[ 'text' ], $index );
       }
+      $html[] = sprintf( '</div> <!-- .gv-%s -->', $index );
     }
 
     // Return the content + styles + details
     return sprintf(
-      '%s <style>%s</style> <div class="gv-details">%s</div>',
+'%s
+<style>
+  %s
+</style>
+<div class="gv-details">
+  %s
+</div> <!-- .gv-details -->',
       $content, implode( "\n", $styles ), implode( "\n", $html )
     );
   }
 
   // If we make it this far, just return the content
   return $content;
-
-    // old shit  
-    // $styles = '
-    // <style>
-    //   .gv-details {
-    //     background-color: #f0f0f0;
-    //     padding: 10px;
-    //     border: 1px solid black;
-    //     border-radius: 10px;
-    //   }
-    // </style>
-    // ';
-    // $details = array( '<div class="gv-details">' );
-
-    // // Old flow
-    //   $paired_business = $pod->field( 'paired_businesses' );
-    //   // gv_debug( 'Paired business' );
-    //   // gv_debug( $paired_business );
-    //   if ( ! empty( $paired_business ) && is_array( $paired_business ) ) {
-    //     foreach ( $paired_business as $bus ) {
-    //       $bus_name = $bus[ 'post_title' ];
-    //       $bus_url = $bus[ 'guid' ];
-    //       $details[] = sprintf('
-    //       <p class="gv-paired_business" style="text-align: center;">
-    //         <a href="%s" class="button">Visit the associated business: %s</a>
-    //       </p>', $bus_url, $bus_name );
-    //     }
-    //   }
-    //   $details[] = '</div>';
-
-    //   // Return the content + details
-    //   return $content . $styles . implode( "\n", $details );
-    // }
-
-    // if ( 'business' === $post_type ) {
-    //   $hours = $pod->field( 'hours' );
-    //   if ( ! empty( $hours ) ) {
-    //     $details[] = '<h5>Hours</h5>';
-    //     $details[] = sprintf( '<p class="gv-hours">%s</p>', $hours );
-    //   }
-    //   $contact_details = array();
-    //   $phone = $pod->field( 'phone_numbers' );
-    //   if ( ! empty( $phone ) ) {
-    //     // TODO: Consider making the phone numbers array an array of arrays, less hard coded BS
-    //     $phone_details = array();
-    //     for ( $i = 0; $i <= 2; $i++ ) {
-    //       $num = empty( $phone[ 'number_' . $i ] ) ? '' : $phone[ 'number_' . $i ];
-    //       $dsc = empty( $phone[ 'description_' . $i ] ) ? '' : $phone[ 'description_' . $i ];
-    //       if ( ! empty( $num ) ) {
-    //         $phone_details[] = sprintf( '%s%s', $num, empty( $dsc ) ? '' : " ($dsc)" );
-    //       }
-    //     }
-    //     $contact_details[] = sprintf( '
-    //     <div class="gv-business-contact gv-phone-numbers">
-    //       <p class="gv-business-contact-icon">%s</p>
-    //       <p class="gv-business-contact-data">%s</p>
-    //     </div>', gv_get_svg_icon( 'phone' ), implode( '<br>', $phone_details ) );
-    //     // $contact_details[] = sprintf( '<a href="%s">%s</a>', $website, gv_get_svg_icon( 'web' ) );
-    //   }
-    //   $website = $pod->field( 'url' );
-    //   if ( ! empty( $website ) ) {
-    //     $contact_details[] = sprintf( '
-    //     <div class="gv-business-contact gv-website">
-    //       <p class="gv-business-contact-icon">%s</p>
-    //       <p class="gv-business-contact-data"><a href="%s">Website</a></p>
-    //     </div>', gv_get_svg_icon( 'web' ), $website );
-    //     // $links[] = sprintf( '<a href="%s">%s</a>', $website, gv_get_svg_icon( 'web' ) );
-    //   }
-    //   $address = $pod->field( 'address' );
-    //   if ( ! empty( $address ) ) {
-    //     $contact_details[] = sprintf( '
-    //     <div class="gv-business-contact gv-address">
-    //       <p class="gv-business-contact-icon">%s</p>
-    //       <p class="gv-business-contact-data">%s</p>
-    //     </div>', gv_get_svg_icon( 'home' ), $address );
-    //     // $links[] = sprintf( '<a href="%s">%s</a>', $facebook, gv_get_svg_icon( 'facebook' ) );
-    //   }
-    //   if ( ! empty( $contact_details ) ) {
-    //     $details[] = '
-    //     <style>
-    //       .gv-business-contact {
-    //         display: flex;
-    //         align-items: center;
-    //         gap: 1em;
-    //       }
-    //       .gv-business-contact-icon,
-    //       .gv-business-contact-data {
-    //         margin: 0;
-    //       }
-    //       .gv-business-contact-icon {
-    //         font-size: 44px;
-    //       }
-    //     </style>';
-    //     $details[] = '<h5>Contact</h5>';
-    //     array_push( $details, ...$contact_details );
-    //     // $details[] = sprintf('<p class="gv-contact-links" style="font-size: 44px;">%s</p>', implode( "\n", $contact_details ) );
-    //   }
-    //   $paired_vol_opp = $pod->field( 'paired_vol_opps' );
-    //   // gv_debug( 'Paired business' );
-    //   // gv_debug( $paired_business );
-    //   if ( ! empty( $paired_vol_opp ) && is_array( $paired_vol_opp ) ) {
-    //     foreach ( $paired_vol_opp as $vol_opp ) {
-    //       $vol_opp_name = $vol_opp[ 'post_title' ];
-    //       $vol_opp_url = $vol_opp[ 'guid' ];
-    //       $details[] = sprintf('
-    //       <p class="gv-paired_vol_opp" style="text-align: center;">
-    //         <a href="%s" class="button">Visit the associated volunteer opportunity: %s</a>
-    //       </p>', $vol_opp_url, $vol_opp_name );
-    //     }
-    //   }
-    //   $details[] = '</div>';
-
-    //   // Return the content + details
-    //   return $content . $styles . implode( "\n", $details );
-    // }
-
-    // If we get this far return the unadulterated content
-  //   return $content;
-  // }
-
-// return $content . '<h5>This is gv_details_content</h5>';
 }
 add_filter( 'the_content', 'GVPlugin\gv_details_content', 10, 1 );
 
