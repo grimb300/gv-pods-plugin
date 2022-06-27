@@ -95,9 +95,14 @@ class GV_Default_Block {
     }
     
     // Get the field data
-    $field_data = $pod->field( $this->field_name );
-    if ( null === $field_data ) {
-      return sprintf( '<p style="color: red"><strong><em>Unable to load data for field %s!</em></strong></p>', $this->field_name );
+    // Special case the search_form field_name, it is not a real field
+    // TODO: This behavior should be an override in the subclass.
+    $field_data = null;
+    if ( 'search_form' !== $this->field_name ) {
+      $field_data = $pod->field( $this->field_name );
+      if ( null === $field_data ) {
+        return sprintf( '<p style="color: red"><strong><em>Unable to load data for field %s!</em></strong></p>', $this->field_name );
+      }
     }
 
     // Display the field

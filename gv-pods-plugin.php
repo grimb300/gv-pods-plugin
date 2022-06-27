@@ -4,7 +4,7 @@
  * Plugin Name:       Grassroots Volunteering Plugin
  * Plugin URI:        http://grassrootsvolunteering.org/
  * Description:       Create, display, and manage Grassroots Volunteering business and volunteer opportunity databases.
- * Version:           0.1
+ * Version:           0.2
  * Requires at least: 5.2
  * Requires PHP:      7.2
  * Author:            Bob Grim

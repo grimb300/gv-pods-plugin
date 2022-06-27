@@ -37,6 +37,7 @@ class GV_Blocks {
     'GV_Link_Block' => 'class-gv-link-block.php',
     'GV_Simple_Text_Block' => 'class-gv-simple-text-block.php',
     'GV_Textarea_Block' => 'class-gv-textarea-block.php',
+    'GV_Search_Form_Block' => 'class-gv-search-form-block.php',
   );
 
   private $gv_blocks_defs = array(
@@ -305,6 +306,24 @@ class GV_Blocks {
       'field_description' => 'Display the volunteer duration of the volunteer opportunity',
       'block_collection' => 'gv-vol-opportunity-blocks-collection',
       'block_class' => 'GV_Taxonomy_Block',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'business',
+      'field_name' => 'search_form',
+      'field_title' => 'Business Search',
+      'field_description' => 'Display the Business search form',
+      'block_collection' => 'gv-business-blocks-collection',
+      'block_class' => 'GV_Search_Form_Block',
+      'attributes' => array(),
+    ),
+    array(
+      'post_type' => 'vol_opportunity',
+      'field_name' => 'search_form',
+      'field_title' => 'Volunteer Opportunity Search',
+      'field_description' => 'Display the Volunteer Opportunity search form',
+      'block_collection' => 'gv-vol-opportunity-blocks-collection',
+      'block_class' => 'GV_Search_Form_Block',
       'attributes' => array(),
     ),
 );
